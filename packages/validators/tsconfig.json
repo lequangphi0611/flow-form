@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "paths": {
+      "@flowform/types": ["../types/src/index.ts"]
+    }
+  },
+  "include": ["src"]
+}

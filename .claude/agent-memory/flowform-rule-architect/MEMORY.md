@@ -1,0 +1,4 @@
+- [API Architecture Decisions](project-api-architecture-decisions.md) — CQRS light, Zod validation, RFC 7807 errors, R2 defaults (10MB/15min/confirm-flow), TS exceptions for JSONB/pg-boss
+- [No-Redis Constraint](project-flowform-no-redis-constraint.md) — Hard constraint: no Redis anywhere; pg-boss for jobs, DB sessions, in-memory throttler
+- [Embed Architecture Decisions](project-embed-decisions.md) — Preact, 30KB cap, CSS isolation (shadow DOM/flowform- prefix), public API backward compat rules
+- [Shared Package Decisions](project-shared-package-decisions.md) — @flowform/types (type-only) vs @flowform/validators (Zod+inferred types), placement rules, terminology

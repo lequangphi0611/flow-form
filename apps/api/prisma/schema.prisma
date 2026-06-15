@@ -1,0 +1,108 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Better Auth tables ───────────────────────────────────────────────────────
+
+model User {
+  id            String    @id
+  name          String
+  email         String    @unique
+  emailVerified Boolean
+  image         String?
+  createdAt     DateTime
+  updatedAt     DateTime
+  sessions      Session[]
+  accounts      Account[]
+  forms         Form[]
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime
+  updatedAt DateTime
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime
+  updatedAt             DateTime
+}
+
+model Verification {
+  id         String    @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime?
+  updatedAt  DateTime?
+}
+
+// ─── FlowForm tables ──────────────────────────────────────────────────────────
+
+model Form {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  schema      Json     // FormSchema (steps, fields, logic)
+  settings    Json     @default("{}")
+  theme       Json     @default("{}")
+  published   Boolean  @default(false)
+  ownerId     String
+  owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  responses FormResponse[]
+  events    FormAnalyticsEvent[]
+
+  @@index([ownerId])
+}
+
+model FormResponse {
+  id          String    @id @default(cuid())
+  formId      String
+  form        Form      @relation(fields: [formId], references: [id], onDelete: Cascade)
+  sessionId   String
+  data        Json      // { fieldId: value }
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([formId])
+  @@index([sessionId])
+}
+
+model FormAnalyticsEvent {
+  id        String   @id @default(cuid())
+  formId    String
+  form      Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
+  sessionId String
+  stepIndex Int
+  eventType String   // "view" | "complete" | "abandon"
+  createdAt DateTime @default(now())
+
+  @@index([formId, stepIndex])
+  @@index([formId, createdAt])
+}
