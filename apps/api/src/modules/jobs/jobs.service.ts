@@ -14,7 +14,7 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
     // Register handlers
     await this.boss.work(JOB_EXPORT_CSV, async (job: any) => {
       console.log('Processing export-csv job', job.data)
-      // TODO: query responses, build CSV, upload to R2
+      // TODO: query responses, build CSV, upload to Firebase Storage
     })
   }
 

@@ -30,20 +30,42 @@ npm -v
 
 ---
 
-## 3. Cloudflare R2 — File storage miễn phí
+## 3. Firebase Storage — File storage miễn phí
 
 > Bỏ qua bước này nếu chưa cần tính năng upload file. App vẫn chạy được.
 
-1. Tạo tài khoản tại [cloudflare.com](https://cloudflare.com) (free)
-2. Vào **R2 Object Storage → Create bucket** → đặt tên `flowform`
-3. Vào **Manage R2 API Tokens → Create API Token**
-   - Permissions: `Object Read & Write`
-   - Scope: `Specific bucket → flowform`
-4. Lưu lại:
-   - `Account ID` (góc phải dashboard)
-   - `Access Key ID`
-   - `Secret Access Key`
-5. Để public URL: vào bucket → **Settings → Public Access** → bật và copy domain
+> **Spark plan (free)** — 5 GB storage, 1 GB/ngày download, không cần credit card.
+
+1. Vào [console.firebase.google.com](https://console.firebase.google.com) → **Add project** → đặt tên `flowform`
+2. Trong project, vào **Build → Storage → Get started**
+   - Chọn **Start in production mode** (bước tiếp theo sẽ cấu hình rules)
+   - Chọn region gần nhất (ví dụ: `asia-southeast1`)
+3. Cấu hình Storage rules — vào **Rules** tab và dán:
+   ```
+   rules_version = '2';
+   service firebase.storage {
+     match /b/{bucket}/o {
+       match /{allPaths=**} {
+         allow read: if true;   // public read (makePublic() đã set qua API)
+         allow write: if false; // chỉ NestJS mới được ghi qua Admin SDK
+       }
+     }
+   }
+   ```
+   → **Publish**
+4. Vào **Project settings (⚙️) → Service accounts → Generate new private key**
+   → Download file JSON, mở ra lấy các giá trị sau:
+   - `project_id` → `FIREBASE_PROJECT_ID`
+   - `client_email` → `FIREBASE_CLIENT_EMAIL`
+   - `private_key` → `FIREBASE_PRIVATE_KEY` *(xem lưu ý bên dưới)*
+   - Tên bucket (dạng `your-project.appspot.com`) → `FIREBASE_STORAGE_BUCKET`
+
+> **Lưu ý `FIREBASE_PRIVATE_KEY`:** Trong file JSON, `private_key` chứa newline thật (`\n`).
+> Khi paste vào `.env`, phải để **trên 1 dòng** trong dấu nháy kép — dotenv tự xử lý `\n` escape:
+> ```
+> FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIIE...\n-----END PRIVATE KEY-----\n"
+> ```
+> Không copy-paste nguyên block PEM nhiều dòng — app sẽ crash khi khởi động.
 
 ---
 
@@ -69,12 +91,11 @@ BETTER_AUTH_SECRET="..."
 BETTER_AUTH_URL="http://localhost:3001"
 FRONTEND_URL="http://localhost:3000"
 
-# Từ bước 3 (để trống nếu bỏ qua bước 3)
-CLOUDFLARE_R2_ACCOUNT_ID=""
-CLOUDFLARE_R2_ACCESS_KEY_ID=""
-CLOUDFLARE_R2_SECRET_ACCESS_KEY=""
-CLOUDFLARE_R2_BUCKET_NAME="flowform"
-CLOUDFLARE_R2_PUBLIC_URL=""
+# Từ bước 3 (để trống nếu bỏ qua bước 3 — app vẫn chạy, chỉ mất tính năng upload)
+FIREBASE_PROJECT_ID=""
+FIREBASE_CLIENT_EMAIL=""
+FIREBASE_PRIVATE_KEY=""
+FIREBASE_STORAGE_BUCKET=""
 ```
 
 > **Tạo BETTER_AUTH_SECRET trên Windows (không có openssl):**
@@ -207,7 +228,7 @@ cd apps/embed && npm run build
 | `apps/web` | Vercel | Connect GitHub repo, auto-detect Next.js |
 | `apps/api` | Render | Web Service, Node runtime, port 3001 |
 | Database | Neon | Dùng production branch thay vì main |
-| File storage | Cloudflare R2 | Đã setup ở bước 3 |
+| File storage | Firebase Storage (Spark) | Đã setup ở bước 3 — dùng credentials từ service account JSON |
 | Keep-alive | UptimeRobot | Monitor URL `https://your-api.render.com/api`, interval 5 phút |
 
 > **Biến môi trường khi deploy:** Điền vào Vercel Dashboard và Render Dashboard thay vì file `.env`.

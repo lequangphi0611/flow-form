@@ -246,54 +246,7 @@ export function WizardForm({ form }: { form: FormSchema }) {
 
 ## 4. File upload trong Form Engine
 
-End-user upload file → Route Handler riêng (khác với Builder upload).
-
-```ts
-// ✅ — src/app/api/forms/[formId]/upload/route.ts
-import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
-
-const Schema = z.object({
-  fileName: z.string().min(1),
-  contentType: z.string().regex(/^(image|application|video|audio)\//),
-  sessionId: z.string().uuid(),
-})
-
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ formId: string }> }
-) {
-  const { formId } = await params
-  const body = await request.json().catch(() => null)
-  const parsed = Schema.safeParse(body)
-
-  if (!parsed.success) {
-    return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
-  }
-
-  // Verify form tồn tại và đang published (no auth — public form)
-  const formCheck = await fetch(`${process.env.API_URL}/api/forms/${formId}/public`, {
-    cache: 'no-store',
-  })
-  if (!formCheck.ok) {
-    return NextResponse.json({ error: 'Form not found' }, { status: 404 })
-  }
-
-  // Lấy presigned URL từ NestJS (NestJS giữ R2 credentials)
-  const res = await fetch(`${process.env.API_URL}/api/storage/upload-url`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...parsed.data, formId, context: 'form-response' }),
-  })
-
-  if (!res.ok) {
-    return NextResponse.json({ error: 'Failed to get upload URL' }, { status: 502 })
-  }
-
-  const { uploadUrl, publicUrl } = await res.json()
-  return NextResponse.json({ uploadUrl, publicUrl })
-}
-```
+End-user upload file → POST `multipart/form-data` **trực tiếp đến NestJS** (`/api/storage/upload`). NestJS proxy file lên Firebase Storage và trả về `publicUrl`. Không cần Next.js Route Handler trung gian.
 
 ```tsx
 // ✅ — FileUploadField trong Form Engine
@@ -305,32 +258,27 @@ import { toast } from 'sonner'
 
 interface FileUploadFieldProps {
   formId: string
-  sessionId: string
   fieldId: string
   onChange: (url: string) => void
 }
 
-export function FileUploadField({ formId, sessionId, fieldId, onChange }: FileUploadFieldProps) {
+export function FileUploadField({ formId, fieldId, onChange }: FileUploadFieldProps) {
   const { mutate: uploadFile, isPending } = useMutation({
     mutationFn: async (file: File) => {
-      // 1. Lấy presigned URL
-      const res = await fetch(`/api/forms/${formId}/upload`, {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('formId', formId)
+      // KHÔNG set Content-Type — browser tự set multipart boundary
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/storage/upload`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fileName: file.name,
-          contentType: file.type,
-          sessionId,
-        }),
+        credentials: 'include', // gửi session cookie để NestJS xác thực
+        body: formData,
       })
 
-      if (!res.ok) throw new Error('Không lấy được upload URL')
-      const { uploadUrl, publicUrl } = await res.json()
-
-      // 2. Upload trực tiếp lên R2
-      await fetch(uploadUrl, { method: 'PUT', body: file })
-
-      return publicUrl
+      if (!res.ok) throw new Error('Upload thất bại')
+      const { publicUrl } = await res.json()
+      return publicUrl as string
     },
 
     onSuccess: (url) => onChange(url),
@@ -341,6 +289,7 @@ export function FileUploadField({ formId, sessionId, fieldId, onChange }: FileUp
     <div className="flex flex-col gap-2">
       <input
         type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"
         disabled={isPending}
         onChange={(e) => {
           const file = e.target.files?.[0]
@@ -353,6 +302,13 @@ export function FileUploadField({ formId, sessionId, fieldId, onChange }: FileUp
   )
 }
 ```
+
+**Quy tắc:**
+- KHÔNG set `Content-Type: multipart/form-data` thủ công — browser tự set với multipart boundary đúng
+- `credentials: 'include'` bắt buộc — NestJS dùng session cookie để auth
+- Upload trả về `{ publicUrl, fileKey }` — lưu `publicUrl` vào form response data
+- Allowed MIME: `image/jpeg`, `image/png`, `image/webp`, `image/gif`, `application/pdf`; khai báo trong `accept` attribute để guide người dùng
+- Max size 10MB được enforce bởi Multer ở NestJS — frontend không cần kiểm tra riêng
 
 ---
 

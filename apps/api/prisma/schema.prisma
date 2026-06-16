@@ -81,8 +81,9 @@ model Form {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  responses FormResponse[]
-  events    FormAnalyticsEvent[]
+  responses       FormResponse[]
+  events          FormAnalyticsEvent[]
+  fileAttachments FileAttachment[]
 
   @@index([ownerId])
 }
@@ -111,4 +112,19 @@ model FormAnalyticsEvent {
 
   @@index([formId, stepIndex])
   @@index([formId, createdAt])
+}
+
+model FileAttachment {
+  id          String   @id @default(cuid())
+  formId      String
+  form        Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
+  fileKey     String   @unique
+  filename    String
+  mimeType    String
+  size        Int
+  publicUrl   String
+  uploadedBy  String
+  createdAt   DateTime @default(now())
+
+  @@index([formId])
 }
