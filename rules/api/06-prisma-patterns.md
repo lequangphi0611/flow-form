@@ -205,6 +205,42 @@ async searchForms(ownerId: string, keyword: string) {
 }
 ```
 
+## JSONB default fallback — `??` không hoạt động với Prisma Json default
+
+**Prisma schema:**
+```prisma
+settings Json @default("{}")
+theme    Json @default("{}")
+```
+
+Prisma trả về `{}` (empty object) — không phải `null` — cho `@default("{}")`. Toán tử `??` chỉ fallback khi giá trị là `null`/`undefined`. `{}` là truthy nên **`?? DEFAULT_SETTINGS` không bao giờ chạy**.
+
+```ts
+// ❌ — Fallback chết vì {} là truthy
+settings: (raw.settings as FormSettings) ?? DEFAULT_SETTINGS  // DEFAULT_SETTINGS không được dùng
+
+// ✅ — Dùng safeParse để validate và lấy giá trị đúng
+const settingsResult = formSettingsSchema.safeParse(raw.settings)
+settings: settingsResult.success ? settingsResult.data : DEFAULT_SETTINGS
+// safeParse trả về .success = false khi {} thiếu required fields → fallback đúng cách
+```
+
+Nếu muốn DB default là `null` thay vì `{}`, xóa `@default("{}")` khỏi schema — lúc đó `??` mới hoạt động đúng. Nhưng cần migration để set các row cũ.
+
+---
+
+## PR Checklist — Repository hydrate()
+
+Trước khi merge PR có `hydrate()` method:
+
+- [ ] Mọi `Json` column đều đi qua `safeParse()` — **không dùng** `as SomeType` cast trực tiếp
+- [ ] Log warning khi `safeParse` fail — `this.logger.warn(...)` với `raw.id` để trace
+- [ ] Fallback về DEFAULT value khi parse fail — không throw trong hydrate
+- [ ] List queries dùng `select` — **không dùng** `include` trừ khi cần relation objects
+- [ ] `steps` không được load trong list query nếu không cần cho UI list card
+
+---
+
 ## Exceptions
 
 - `auth.config.ts` is the sole permitted location for a direct `PrismaClient` instantiation, due to Better Auth's adapter requirements. This exception is documented with a comment at the instantiation site.

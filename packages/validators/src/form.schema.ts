@@ -71,3 +71,10 @@ export const createFormDraftSchema = z.object({
 })
 
 export type CreateFormDraftDto = z.infer<typeof createFormDraftSchema>
+
+// Schema cho JSONB column `schema` trong bảng Form — dùng trong repository.hydrate()
+export const formBodySchema = z.object({
+  steps: z.array(stepSchemaValidator).default([]),
+})
+
+export type FormBody = z.infer<typeof formBodySchema>

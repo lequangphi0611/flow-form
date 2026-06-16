@@ -1,6 +1,7 @@
-import { PipeTransform, BadRequestException } from '@nestjs/common'
+import { Injectable, PipeTransform, BadRequestException } from '@nestjs/common'
 import type { ZodSchema } from 'zod'
 
+@Injectable()
 export class ZodValidationPipe<T> implements PipeTransform {
   constructor(private readonly schema: ZodSchema<T>) {}
 
@@ -11,8 +12,8 @@ export class ZodValidationPipe<T> implements PipeTransform {
         type: 'https://flowform.dev/errors/validation',
         title: 'Validation Failed',
         status: 400,
-        detail: result.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; '),
-        errors: result.error.issues,
+        detail: 'Request body failed schema validation',
+        errors: result.error.flatten().fieldErrors,
       })
     }
     return result.data
