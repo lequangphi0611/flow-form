@@ -29,6 +29,7 @@ export function LoginForm({ isPending, error, onSubmit }: LoginFormProps) {
     formState: { errors },
   } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
+    mode: 'onBlur',
   })
 
   function handleFormSubmit(data: LoginInput) {
