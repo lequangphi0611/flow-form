@@ -44,26 +44,34 @@ queryClient.invalidateQueries({ queryKey: formKeys.detail(id) })
 
 ---
 
-## 2. Client Component fetch — luôn dùng `useQuery`
+## 2. Client Component fetch — luôn dùng custom hook bọc `useQuery`
 
-Không dùng `useEffect + fetch` thủ công trong Client Component.
+Không dùng `useEffect + fetch` thủ công. Không viết `useQuery(...)` trực tiếp trong component hay container — phải bọc trong custom hook tại `src/hooks/`.
 
-```tsx
-// ✅ — useQuery với queryFn qua lib/api (xem 11-data-layer.md)
-// src/components/forms/containers/FormDetailContainer.tsx  ← đặt trong containers/ theo rule 09
-'use client'
-
+```ts
+// src/hooks/forms/useFormDetail.ts  ✅
 import { useQuery } from '@tanstack/react-query'
 import { formsApi } from '@/lib/api/forms'
 import { formKeys } from '@/lib/query-keys'
+
+export function useFormDetail(formId: string) {
+  return useQuery({
+    queryKey: formKeys.detail(formId),
+    queryFn: () => formsApi.get(formId),
+  })
+}
+```
+
+```tsx
+// src/components/forms/containers/FormDetailContainer.tsx  ✅
+'use client'
+
+import { useFormDetail } from '@/hooks/forms/useFormDetail'
 import { FormDetailSkeleton } from '@/components/forms/FormDetailSkeleton'
 import { EmptyState } from '@/components/common/EmptyState'
 
 export function FormDetailContainer({ formId }: { formId: string }) {
-  const { data: form, isLoading, isError, refetch } = useQuery({
-    queryKey: formKeys.detail(formId),
-    queryFn: () => formsApi.get(formId),  // ← lib/api, không phải fetch()
-  })
+  const { data: form, isLoading, isError, refetch } = useFormDetail(formId)
 
   if (isLoading) return <FormDetailSkeleton />
   if (isError) return (
@@ -77,38 +85,46 @@ export function FormDetailContainer({ formId }: { formId: string }) {
 ```
 
 ```tsx
-// ❌ — useEffect + fetch thủ công: không có cache, không re-fetch thông minh
-'use client'
+// ❌ — useQuery inline trong container
+export function FormDetailContainer({ formId }: { formId: string }) {
+  const { data: form } = useQuery({          // ❌ không bọc trong hook
+    queryKey: formKeys.detail(formId),
+    queryFn: () => formsApi.get(formId),
+  })
+}
 
+// ❌ — useEffect + fetch thủ công
 export function FormDetailContainer({ formId }: { formId: string }) {
   const [data, setData] = useState(null)
-
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/forms/${formId}`)  // ❌ fetch trực tiếp
-      .then(r => r.json())
-      .then(setData)
+    fetch(`/api/forms/${formId}`).then(r => r.json()).then(setData)  // ❌ không cache, không error state
   }, [formId])
-  // Không có loading state, error state, cache, hay invalidation
 }
 ```
 
 ---
 
-## 3. Mutation hooks — BẮT BUỘC tách ra custom hook
+## 3. Query và Mutation hooks — BẮT BUỘC tách ra custom hook
 
-Mọi `useMutation` call phải nằm trong một **custom hook riêng** đặt tại `src/hooks/`.
-Không được viết `useMutation(...)` trực tiếp trong component hay container.
+Mọi `useQuery` và `useMutation` call phải nằm trong một **custom hook riêng** đặt tại `src/hooks/`.
+Không được viết `useQuery(...)` hay `useMutation(...)` trực tiếp trong component hay container.
 
 **Lý do:**
-- Mutation logic (queryClient, invalidation, error) dùng lại được nhiều nơi
-- Container chỉ orchestrate, không chứa mutation config
+- Query/mutation config (queryKey, queryFn, invalidation, error) dùng lại được nhiều nơi
+- Container chỉ orchestrate, không chứa query config
 - Dễ test hook độc lập
 
-**Naming:** `use[Action][Entity]` — camelCase, ví dụ: `useDeleteForm`, `useCreateForm`, `useUpdateFormSettings`
+**Naming:**
+- Query: `use[Entity]` hoặc `use[Entity]List` — ví dụ: `useFormList`, `useFormDetail`
+- Mutation: `use[Action][Entity]` — ví dụ: `useDeleteForm`, `useCreateForm`, `useUpdateFormSettings`
 
-**Đặt file:** `src/hooks/[entity]/use[Action][Entity].ts`
-- `src/hooks/forms/useDeleteForm.ts`
-- `src/hooks/forms/useCreateForm.ts`
+**Đặt file:** `src/hooks/[entity]/use[Name].ts`
+```
+src/hooks/forms/useFormList.ts         ← useQuery danh sách
+src/hooks/forms/useFormDetail.ts       ← useQuery 1 form
+src/hooks/forms/useDeleteForm.ts       ← useMutation xóa
+src/hooks/forms/useCreateForm.ts       ← useMutation tạo
+```
 
 **Khi `onSuccess` cần gọi logic của component** (setState, router.push...) → nhận vào qua callback param:
 
