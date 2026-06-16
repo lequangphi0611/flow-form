@@ -149,34 +149,38 @@ export function UserMenu() {
 
 ---
 
-## 4. Login page — `/login`
+## 4. Login/Register page — tách Container + Presenter (xem rule 08)
+
+Auth pages dùng `signIn.email()`, `signUp.email()`, `router.push()` → **bắt buộc tách Container/Presenter** theo rule 08.
+
+```
+components/auth/containers/LoginContainer.tsx   ← gọi signIn.email(), router.push()
+components/auth/LoginForm.tsx                   ← nhận { isPending, onSubmit, error } qua props
+app/(auth)/login/page.tsx                       ← chỉ import LoginContainer, không có logic
+```
 
 ```tsx
-// ✅ — src/app/login/page.tsx
+// ✅ — components/auth/containers/LoginContainer.tsx
 'use client'
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { signIn } from '@/lib/auth-client'
-import { toast } from 'sonner'
+import { LoginForm } from '../LoginForm'
 
-export default function LoginPage() {
+export function LoginContainer() {
   const router = useRouter()
   const [isPending, setIsPending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
+  async function handleSubmit(email: string, password: string) {
     setIsPending(true)
+    setError(null)
 
-    const formData = new FormData(e.currentTarget)
+    const { error: signInError } = await signIn.email({ email, password })
 
-    const { error } = await signIn.email({
-      email: formData.get('email') as string,
-      password: formData.get('password') as string,
-    })
-
-    if (error) {
-      toast.error('Email hoặc mật khẩu không đúng')
+    if (signInError) {
+      setError('Email hoặc mật khẩu không đúng')
       setIsPending(false)
       return
     }
@@ -184,24 +188,38 @@ export default function LoginPage() {
     router.push('/forms')  // luôn redirect về /forms sau login
   }
 
+  return <LoginForm isPending={isPending} error={error} onSubmit={handleSubmit} />
+}
+```
+
+```tsx
+// ✅ — app/(auth)/login/page.tsx — chỉ mount Container, không có logic
+import { LoginContainer } from '@/components/auth/containers/LoginContainer'
+
+export default function LoginPage() {
+  return <LoginContainer />
+}
+```
+
+```tsx
+// ❌ — SAI: page.tsx vừa gọi signIn.email() vừa render form UI
+// app/(auth)/login/page.tsx
+'use client'
+export default function LoginPage() {
+  const router = useRouter()
+  const [isPending, setIsPending] = useState(false)
+
+  async function handleSubmit(e) {
+    // ... gọi signIn.email() ở đây  ← logic thuộc Container
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-full max-w-sm bg-white p-8 rounded-xl shadow-sm border">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Đăng nhập</h1>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input name="email" type="email" placeholder="Email" required
-            className="w-full h-10 px-3 border rounded-md text-sm" />
-          <input name="password" type="password" placeholder="Mật khẩu" required
-            className="w-full h-10 px-3 border rounded-md text-sm" />
-          <button type="submit" disabled={isPending}
-            className="w-full h-10 bg-blue-500 text-white rounded-md text-sm font-medium hover:bg-blue-600 disabled:opacity-50">
-            {isPending ? 'Đang đăng nhập...' : 'Đăng nhập'}
-          </button>
-        </form>
-      </div>
-    </div>
+    <form onSubmit={handleSubmit}>  {/* ← UI thuộc Presenter */}
+      ...
+    </form>
   )
 }
+// Vi phạm rule 08 — trộn lẫn Container + Presenter trong 1 file
 ```
 
 ---

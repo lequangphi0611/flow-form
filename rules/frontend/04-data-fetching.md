@@ -50,6 +50,7 @@ Không dùng `useEffect + fetch` thủ công trong Client Component.
 
 ```tsx
 // ✅ — useQuery với queryFn qua lib/api (xem 11-data-layer.md)
+// src/components/forms/containers/FormDetailContainer.tsx  ← đặt trong containers/ theo rule 09
 'use client'
 
 import { useQuery } from '@tanstack/react-query'

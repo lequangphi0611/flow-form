@@ -63,19 +63,49 @@ export function FieldCard({ field }: { field: FieldSchema }) {
 ### Cấu trúc thư mục components
 ```
 src/components/
-├── ui/               ← shadcn/ui generated — KHÔNG EDIT trực tiếp
-├── providers.tsx     ← app-level providers
-├── builder/          ← components cho module Builder
+├── ui/               ← ATOM: shadcn/ui generated — KHÔNG EDIT trực tiếp
+├── common/           ← MOLECULE: atoms kết hợp, dùng chung toàn app
+│   ├── FormField.tsx
+│   └── EmptyState.tsx
+├── auth/             ← ORGANISM: feature auth
+│   ├── containers/
+│   │   └── RegisterContainer.tsx
+│   └── RegisterForm.tsx
+├── builder/          ← ORGANISM: feature Builder
+│   ├── containers/
 │   ├── StepList.tsx
 │   ├── StepCard.tsx
 │   ├── FieldCard.tsx
 │   └── FieldSettingsPanel.tsx
-├── form-engine/      ← components cho Wizard renderer (end-user)
+├── forms/            ← ORGANISM: feature quản lý form
+│   ├── containers/
+│   ├── FormGrid.tsx
+│   └── FormCard.tsx
+├── analytics/        ← ORGANISM: feature analytics
+│   ├── FunnelChart.tsx
+│   └── SummaryCards.tsx
+├── form-engine/      ← ORGANISM: Wizard renderer (end-user)
 │   ├── WizardStep.tsx
 │   └── FieldRenderer.tsx
-└── shared/           ← components dùng chung nhiều module
-    └── EmptyState.tsx
+└── providers.tsx     ← app-level providers
 ```
+
+### KHÔNG đặt component trong `app/**/[route]/_components/`
+
+```
+// ❌ — KHÔNG làm
+app/(auth)/register/_components/RegisterForm.tsx
+
+// ✅ — Luôn đặt vào components/[feature]/
+components/auth/RegisterForm.tsx
+```
+
+`_components/` là anti-pattern trong codebase này vì:
+- Component bị giam trong 1 route, không thể tái sử dụng
+- Mọi component, kể cả dùng 1 lần, đều phải qua `components/[feature]/` để dễ tìm và tái sử dụng sau
+- Nếu component thực sự cần fetch hay đọc store → đặt vào `components/[feature]/containers/`
+
+Xem `09-atomic-design.md` để biết đầy đủ quy trình phân loại.
 
 ---
 
