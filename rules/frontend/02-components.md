@@ -150,7 +150,7 @@ export const Button = React.forwardRef(({ className, variant, ...props }, ref) =
 
 ```tsx
 // ✅ — Tạo wrapper component riêng
-// src/components/shared/PrimaryButton.tsx
+// src/components/common/PrimaryButton.tsx
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 

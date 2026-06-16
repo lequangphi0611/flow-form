@@ -98,19 +98,6 @@ export function FormGrid({ forms, onDelete }: FormGridProps) {
 }
 ```
 
-```tsx
-// ❌ — Presenter tự fetch data
-export function FormGrid() {
-  const { data: forms } = useQuery(...)  // ❌ Presenter không được tự fetch
-
-  return (
-    <div className="grid ...">
-      {forms?.map((form) => <FormCard key={form.id} form={form} />)}
-    </div>
-  )
-}
-```
-
 ---
 
 ### 3. Callback từ Container xuống Presenter
@@ -184,33 +171,6 @@ export function BuilderCanvasContainer() {
 }
 ```
 
-```tsx
-// ✅ — StepCanvas: Presenter thuần, không biết Zustand tồn tại
-// src/components/builder/StepCanvas.tsx
-import type { StepSchema, FieldSchema } from '@flowform/types'
-import { FieldRenderer } from './FieldRenderer'
-
-interface StepCanvasProps {
-  step: StepSchema
-  onUpdateField: (fieldId: string, updates: Partial<FieldSchema>) => void
-}
-
-export function StepCanvas({ step, onUpdateField }: StepCanvasProps) {
-  return (
-    <div className="flex flex-col gap-4 p-6 max-w-2xl mx-auto">
-      <h2 className="text-xl font-semibold">{step.title}</h2>
-      {step.fields.map((field) => (
-        <FieldRenderer
-          key={field.id}
-          field={field}
-          onUpdate={(updates) => onUpdateField(field.id, updates)}
-        />
-      ))}
-    </div>
-  )
-}
-```
-
 ---
 
 ### 5. Server Component làm Container — không cần `'use client'`
@@ -237,7 +197,6 @@ export default async function FormsPage() {
 
 ## Cấu trúc thư mục
 
-> Xem `09-atomic-design.md` để biết cấu trúc đầy đủ.
 > Container nằm trong subfolder `containers/` của từng feature:
 > ```
 > components/[feature]/
@@ -248,13 +207,98 @@ export default async function FormsPage() {
 
 ---
 
+### 6. Auth forms — ví dụ thực tế hay bị vi phạm
+
+`signUp.email()`, `signIn.email()`, `router.push()` đều là side effects → **bắt buộc tách Container**.
+
+```tsx
+// ❌ — SAI: 1 component vừa gọi signUp.email() vừa render form
+// app/(auth)/register/_components/RegisterForm.tsx
+'use client'
+
+export function RegisterForm() {
+  const router = useRouter()
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    const { error } = await signUp.email({ email, password, name })  // ← Container logic
+    if (!error) router.push('/forms')                                  // ← Container logic
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>  {/* ← Presenter logic — bị trộn lẫn */}
+      ...
+    </form>
+  )
+}
+// Vi phạm: 1 file làm việc của cả Container lẫn Presenter
+```
+
+```
+// ✅ — ĐÚNG: tách thành 2 file
+components/auth/containers/RegisterContainer.tsx  ← signUp.email(), router.push()
+components/auth/RegisterForm.tsx                  ← nhận { isPending, error, onSubmit } qua props
+app/(auth)/register/page.tsx                      ← chỉ import RegisterContainer
+```
+
+```tsx
+// ✅ — RegisterContainer
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { signUp } from '@/lib/auth-client'
+import { RegisterForm } from '../RegisterForm'
+
+export function RegisterContainer() {
+  const router = useRouter()
+  const [isPending, setIsPending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleSubmit(name: string, email: string, password: string) {
+    setIsPending(true)
+    setError(null)
+    const { error: signUpError } = await signUp.email({ name, email, password })
+    if (signUpError) {
+      setError('Đăng ký thất bại, thử lại sau')
+      setIsPending(false)
+      return
+    }
+    router.push('/forms')
+  }
+
+  return <RegisterForm isPending={isPending} error={error} onSubmit={handleSubmit} />
+}
+```
+
+```tsx
+// ✅ — RegisterForm (Presenter) — không biết signUp hay router tồn tại
+interface RegisterFormProps {
+  isPending: boolean
+  error: string | null
+  onSubmit: (name: string, email: string, password: string) => void
+}
+
+export function RegisterForm({ isPending, error, onSubmit }: RegisterFormProps) {
+  const { register, handleSubmit, formState: { errors } } = useForm<RegisterInput>({
+    resolver: zodResolver(registerSchema),
+  })
+  // ... render form, gọi onSubmit qua props
+}
+```
+
+---
+
 ## Tóm tắt — khi nào tạo Container
 
 | Tình huống | Tạo Container? |
 |---|---|
 | Component cần `useQuery` | ✅ Tạo Container |
 | Component cần `useMutation` | ✅ Tạo Container |
+| Component gọi `signIn.email()` / `signUp.email()` | ✅ Tạo Container |
+| Component gọi `router.push()` sau side effect và có UI phức tạp | ✅ Tạo Container |
 | Component đọc từ Zustand store | ✅ Tạo Container (hoặc bản thân nó là Container) |
 | Server Component async fetch | ✅ Server Component = Container tự nhiên |
 | Component chỉ nhận props và render | ❌ Không cần Container, đây là Presenter |
 | Component có `useState` UI đơn giản | ❌ Không cần Container (toggle, hover không tính) |
+| Button nhỏ tự chứa (SignOutButton, CopyButton) | ❌ Không cần Container — đủ đơn giản để self-contain |

@@ -14,23 +14,23 @@
 
 | File | Đọc khi |
 |---|---|
-| [`../../rules/frontend/01-conventions.md`](../../rules/frontend/01-conventions.md) | Tạo file mới, đặt tên, tổ chức imports |
-| [`../../rules/frontend/02-components.md`](../../rules/frontend/02-components.md) | Viết React component bất kỳ |
-| [`../../rules/frontend/03-state.md`](../../rules/frontend/03-state.md) | Làm việc với Zustand store hoặc local state |
+| [`../../rules/frontend/01-conventions.md`](../../rules/frontend/01-conventions.md) | **Tạo file mới bất kỳ** — đặt tên file, tổ chức imports. Nhớ: component file = PascalCase (`RegisterForm.tsx`), hook/util/store = camelCase (`useAutoSave.ts`) |
+| [`../../rules/frontend/02-components.md`](../../rules/frontend/02-components.md) | Viết component: props interface, ref forwarding, composition, displayName — **sau khi** đã quyết định vị trí file (rule 09) và phân tách container/presenter (rule 08) |
+| [`../../rules/frontend/03-state.md`](../../rules/frontend/03-state.md) | Thêm `useState`, `useReducer`, hoặc bất kỳ Zustand action nào vào component |
 | [`../../rules/frontend/04-data-fetching.md`](../../rules/frontend/04-data-fetching.md) | TanStack Query client hooks: useQuery, useMutation, query keys, optimistic update |
-| [`../../rules/frontend/05-forms.md`](../../rules/frontend/05-forms.md) | Form bất kỳ — builder settings hoặc wizard renderer |
+| [`../../rules/frontend/05-forms.md`](../../rules/frontend/05-forms.md) | **Tạo bất kỳ form nào** — auth (login/register), dashboard settings, builder settings, wizard renderer — bất kỳ `<form>` element nào |
 | [`../../rules/frontend/06-styling.md`](../../rules/frontend/06-styling.md) | Styling với Tailwind + shadcn/ui |
 | [`../../rules/frontend/07-builder.md`](../../rules/frontend/07-builder.md) | Làm việc trong module Builder (dnd-kit, canvas, store) |
-| [`../../rules/frontend/08-presenter-container.md`](../../rules/frontend/08-presenter-container.md) | Tách Container (fetch/store) và Presenter (render UI) |
-| [`../../rules/frontend/09-atomic-design.md`](../../rules/frontend/09-atomic-design.md) | Phân loại component: Atom / Molecule / Organism / Page |
-| [`../../rules/frontend/10-nextjs-cache.md`](../../rules/frontend/10-nextjs-cache.md) | Caching Server Components: fetch options, React.cache, revalidate, Suspense |
-| [`../../rules/frontend/11-data-layer.md`](../../rules/frontend/11-data-layer.md) | Không gọi fetch trực tiếp — luôn qua `lib/data/` (server) hoặc `lib/api/` (client) |
+| [`../../rules/frontend/08-presenter-container.md`](../../rules/frontend/08-presenter-container.md) | **Tạo component có useQuery, useMutation, useSession, useBuilderStore, signIn, signUp, signOut, hoặc router.push** — phải tách Container riêng trước khi viết JSX |
+| [`../../rules/frontend/09-atomic-design.md`](../../rules/frontend/09-atomic-design.md) | **Tạo component mới bất kỳ** — quyết định đặt file ở đâu trong `components/` |
+| [`../../rules/frontend/10-nextjs-cache.md`](../../rules/frontend/10-nextjs-cache.md) | Thêm `fetch()` vào Server Component, hoặc dùng `revalidatePath`/`revalidateTag`, hoặc bọc component bằng `<Suspense>` |
+| [`../../rules/frontend/11-data-layer.md`](../../rules/frontend/11-data-layer.md) | **Bất cứ khi nào cần gọi API hoặc fetch DB** — luôn phải tạo hàm trong `lib/data/` (server) hoặc `lib/api/` (client), không gọi `fetch()` trực tiếp trong component |
 | [`../../rules/frontend/12-route-handlers.md`](../../rules/frontend/12-route-handlers.md) | Next.js Route Handlers: khi nào dùng, cách viết, cách gọi |
-| [`../../rules/frontend/13-error-handling.md`](../../rules/frontend/13-error-handling.md) | error.tsx, not-found, TanStack Query errors, toast, Server Action |
+| [`../../rules/frontend/13-error-handling.md`](../../rules/frontend/13-error-handling.md) | Xử lý lỗi từ `useMutation`/`useQuery`, tạo `error.tsx`/`not-found.tsx`, hiển thị toast, Server Action thất bại |
 | [`../../rules/frontend/14-ui-design.md`](../../rules/frontend/14-ui-design.md) | Typography, spacing, màu sắc, layout patterns, loading, empty state |
-| [`../../rules/frontend/15-auth.md`](../../rules/frontend/15-auth.md) | Middleware bảo vệ route, getSession() trong Server Component, useSession() trong Client |
+| [`../../rules/frontend/15-auth.md`](../../rules/frontend/15-auth.md) | **Implement bất kỳ tính năng auth nào** — trang login/register, bảo vệ route, đọc session trong Server Component, dùng `useSession()` trong Client Component. Auth pages có `signIn`/`signUp` + `router.push` → **phải đọc rule 08 trước** |
 | [`../../rules/frontend/16-typescript.md`](../../rules/frontend/16-typescript.md) | `as`, `any`, `unknown`, `@ts-expect-error`, non-null assertion, generics |
-| [`../../rules/frontend/17-performance.md`](../../rules/frontend/17-performance.md) | React.memo cho list items, useMemo, useCallback, next/dynamic cho thư viện nặng |
+| [`../../rules/frontend/17-performance.md`](../../rules/frontend/17-performance.md) | Render danh sách (list/grid), import thư viện nặng (charts, rich text, PDF), component re-render nhiều lần |
 | [`../../rules/frontend/18-form-engine.md`](../../rules/frontend/18-form-engine.md) | Conditional fields, dynamic Zod schema, useFormTracking, file upload cho end-user |
 | [`../../rules/frontend/19-url-state.md`](../../rules/frontend/19-url-state.md) | Search params cho filter/sort/pagination — không dùng useState hay Zustand |
 
@@ -56,6 +56,7 @@
 ```
 src/
 ├── app/
+│   ├── (auth)/               ← Route group: login, register (không cần auth)
 │   ├── (dashboard)/          ← Route group: layout có sidebar
 │   │   └── forms/page.tsx    ← Danh sách form
 │   ├── (builder)/            ← Route group: layout full-screen
@@ -64,6 +65,12 @@ src/
 │   │   └── forms/[id]/analytics/page.tsx
 │   └── f/[formId]/page.tsx   ← Public form — SSR
 ├── components/
+│   ├── ui/                   ← ATOM: shadcn primitives (Button, Input, Label...)
+│   ├── common/               ← MOLECULE: tổ hợp atoms dùng chung (FormField, EmptyState...)
+│   ├── auth/                 ← ORGANISM: components của feature auth
+│   ├── forms/                ← ORGANISM: components của feature quản lý form
+│   ├── builder/              ← ORGANISM: components của feature builder
+│   ├── analytics/            ← ORGANISM: components của feature analytics
 │   └── providers.tsx         ← QueryClientProvider
 ├── lib/
 │   ├── utils.ts              ← cn() helper
@@ -76,6 +83,67 @@ src/
 ---
 
 ## QUY TẮC QUAN TRỌNG
+
+### Tách Container / Presenter — BẮT BUỘC khi component có side effect
+
+Trước khi viết JSX của bất kỳ component nào, kiểm tra: component này có dùng `useQuery`, `useMutation`, `useSession`, `useBuilderStore`, `signIn`, `signUp`, `signOut`, `router.push`, hay `useEffect` gọi API không?
+
+- **Có** → phải tách thành 2 file:
+  - `components/[feature]/containers/[Name]Container.tsx` — chỉ fetch/mutate/điều hướng, truyền kết quả xuống Presenter qua props
+  - `components/[feature]/[Name].tsx` — chỉ nhận props và render JSX, không biết API/store tồn tại
+- **Không** → đây là Presenter thuần, viết trực tiếp
+
+**Ví dụ auth form đúng:**
+```
+components/auth/containers/RegisterContainer.tsx  ← gọi signUp.email(), router.push()
+components/auth/RegisterForm.tsx                  ← nhận { isPending, onSubmit } qua props
+```
+
+Đọc [`rules/frontend/08-presenter-container.md`](../../rules/frontend/08-presenter-container.md) để xem ví dụ đầy đủ.
+
+---
+
+### Đặt component mới ở đâu — BẮT BUỘC kiểm tra trước khi tạo file
+
+Mỗi khi tạo component mới, trả lời theo thứ tự:
+
+1. **Có phải shadcn primitive?** → `components/ui/` (Atom — do `npx shadcn` generate, không tự tạo)
+2. **Dùng được ở nhiều feature, không fetch, không đọc store?** → `components/common/` (Molecule)
+3. **Gắn với 1 feature cụ thể?** → `components/[feature]/` (Organism)
+   - auth form → `components/auth/`
+   - form list/card → `components/forms/`
+   - drag & drop canvas → `components/builder/`
+   - charts, stats → `components/analytics/`
+4. **Cần fetch hoặc kết nối Zustand store?** → `components/[feature]/containers/` (Container)
+5. **Là entry point của route?** → `app/**/page.tsx` (Page — không chứa logic phức tạp)
+
+**Không bao giờ đặt component vào `app/**/[route]/_components/`** trừ khi component đó chỉ dùng đúng 1 lần tại route đó VÀ không thể tái sử dụng. Ngay cả khi đó, ưu tiên đặt vào `components/[feature]/` trước.
+
+Đọc [`rules/frontend/09-atomic-design.md`](../../rules/frontend/09-atomic-design.md) để biết đầy đủ ví dụ và edge cases.
+
+---
+
+### Naming convention — BẮT BUỘC khi tạo file mới
+
+**Trước khi tạo bất kỳ file nào**, xác định loại file:
+
+| Loại | Convention | Ví dụ đúng | Ví dụ sai |
+|---|---|---|---|
+| Component | **PascalCase** | `RegisterForm.tsx` | `register-form.tsx`, `registerForm.tsx` |
+| Hook | camelCase | `useAutoSave.ts` | `UseAutoSave.ts`, `use-auto-save.ts` |
+| Util / lib | camelCase | `formatDate.ts` | `FormatDate.ts` |
+| Store | camelCase | `builder.store.ts` | `BuilderStore.ts` |
+| Schema | camelCase | `register.schema.ts` | `RegisterSchema.ts` |
+
+**Tên file phải khớp với tên export chính:**
+```
+// file: RegisterForm.tsx → export function RegisterForm()  ✅
+// file: register-form.tsx → export function RegisterForm() ❌ tên không khớp
+```
+
+Đọc [`rules/frontend/01-conventions.md`](../../rules/frontend/01-conventions.md) để xem đầy đủ.
+
+---
 
 ### Route groups
 - `(dashboard)` — Các trang cần đăng nhập, có sidebar
