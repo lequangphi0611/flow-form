@@ -12,11 +12,11 @@ import type { SessionUser } from '../../common/types/session.types'
 export class FormsController {
   constructor(private readonly formsService: FormsService) {}
 
-  // === PUBLIC ===
+  // === PUBLIC (published forms only) ===
 
   @Get(':id')
-  getForm(@Param('id') id: string) {
-    return this.formsService.getFormOrThrow(id)
+  getPublicForm(@Param('id') id: string) {
+    return this.formsService.getPublishedFormOrThrow(id)
   }
 
   // === AUTH REQUIRED ===

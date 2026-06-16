@@ -62,14 +62,20 @@ model Verification {
 
 // ─── FlowForm tables ──────────────────────────────────────────────────────────
 
+enum FormStatus {
+  draft
+  published
+  closed
+}
+
 model Form {
-  id          String   @id @default(cuid())
+  id          String     @id @default(cuid())
   title       String
   description String?
-  schema      Json     // FormSchema (steps, fields, logic)
-  settings    Json     @default("{}")
-  theme       Json     @default("{}")
-  status      String   @default("draft")
+  schema      Json       // FormSchema (steps, fields, logic)
+  settings    Json       @default("{}")
+  theme       Json       @default("{}")
+  status      FormStatus @default(draft)
   ownerId     String
   owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())

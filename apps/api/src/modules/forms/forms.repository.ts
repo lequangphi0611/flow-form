@@ -47,6 +47,23 @@ export class FormsRepository {
     return rows.map((r) => this.hydrateSummary(r))
   }
 
+  // Minimal fetch for ownership check — used by FormOwnerGuard only
+  async findOwnerById(id: string): Promise<{ ownerId: string } | null> {
+    return this.prisma.form.findUnique({
+      where: { id },
+      select: { ownerId: true },
+    })
+  }
+
+  // Public fetch — only returns published forms (anonymous access)
+  async findPublishedById(id: string): Promise<FormSchema | null> {
+    const row = await this.prisma.form.findUnique({
+      where: { id, status: 'published' },
+      include: { _count: { select: { responses: true } } },
+    })
+    return row ? this.hydrate(row as unknown as RawForm) : null
+  }
+
   async findById(id: string): Promise<FormSchema | null> {
     const row = await this.prisma.form.findUnique({
       where: { id },

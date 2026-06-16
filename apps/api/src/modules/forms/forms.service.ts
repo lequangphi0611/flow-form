@@ -28,6 +28,19 @@ export class FormsService {
     return form
   }
 
+  async getPublishedFormOrThrow(id: string): Promise<FormSchema> {
+    const form = await this.formsRepository.findPublishedById(id)
+    if (!form) {
+      throw new NotFoundException({
+        type: 'https://flowform.dev/errors/not-found',
+        title: 'Form Not Found',
+        status: 404,
+        detail: `Form '${id}' does not exist or is not published.`,
+      })
+    }
+    return form
+  }
+
   // === COMMAND ===
 
   async createForm(userId: string, dto: CreateFormDraftDto): Promise<FormSchema> {
@@ -36,7 +49,7 @@ export class FormsService {
   }
 
   async deleteForm(id: string): Promise<void> {
-    await this.getFormOrThrow(id)
+    // FormOwnerGuard has already verified existence and ownership
     await this.formsRepository.delete(id)
     this.logger.log(`Form deleted: ${id}`)
   }
