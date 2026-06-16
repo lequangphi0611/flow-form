@@ -14,19 +14,24 @@ export function RegisterContainer() {
     setIsPending(true)
     setEmailError(undefined)
 
-    const { error } = await signUp.email({
-      name: data.name,
-      email: data.email,
-      password: data.password,
-    })
+    try {
+      const { error } = await signUp.email({
+        name: data.name,
+        email: data.email,
+        password: data.password,
+      })
 
-    if (error) {
-      setEmailError('Email này đã được sử dụng')
+      if (error) {
+        setEmailError('Email này đã được sử dụng')
+        return
+      }
+
+      router.push('/forms')
+    } catch {
+      setEmailError('Đã có lỗi xảy ra, vui lòng thử lại')
+    } finally {
       setIsPending(false)
-      return
     }
-
-    router.push('/forms')
   }
 
   return (

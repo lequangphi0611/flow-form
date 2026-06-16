@@ -19,21 +19,19 @@ export const formsApi = {
     return fetch(`${API_URL}/api/forms/${id}`, { credentials: 'include' }).then(handleResponse<FormSchema>)
   },
 
-  create(data: { title: string }): Promise<{ id: string }> {
+  create(data: { title: string }): Promise<FormSchema> {
     return fetch(`${API_URL}/api/forms`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
-    }).then(handleResponse<{ id: string }>)
+    }).then(handleResponse<FormSchema>)
   },
 
   delete(id: string): Promise<void> {
     return fetch(`${API_URL}/api/forms/${id}`, {
       method: 'DELETE',
       credentials: 'include',
-    }).then((res) => {
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-    })
+    }).then(handleResponse<void>)
   },
 }

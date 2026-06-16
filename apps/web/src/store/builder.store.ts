@@ -2,6 +2,9 @@ import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import type { FormSchema, StepSchema, FieldSchema } from '@flowform/types'
 
+const DEFAULT_STEP_TITLE = 'Bước mới'
+const DEFAULT_FIELD_LABEL = 'Câu hỏi mới'
+
 interface BuilderState {
   form: FormSchema | null
   selectedStepId: string | null
@@ -49,7 +52,7 @@ export const useBuilderStore = create<BuilderState & BuilderActions>()(
         if (!s.form) return
         s.form.steps.push({
           id: crypto.randomUUID(),
-          title: 'Bước mới',
+          title: DEFAULT_STEP_TITLE,
           fields: [],
         })
       }),
@@ -81,7 +84,7 @@ export const useBuilderStore = create<BuilderState & BuilderActions>()(
         step?.fields.push({
           id: crypto.randomUUID(),
           type,
-          label: 'Câu hỏi mới',
+          label: DEFAULT_FIELD_LABEL,
           required: false,
         })
       }),

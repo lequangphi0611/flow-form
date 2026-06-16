@@ -75,7 +75,7 @@ export function FormCard({ form, onDelete, onEdit, onViewResponses }: FormCardPr
       </CardHeader>
       <CardContent className="space-y-1">
         <p className="text-xs text-gray-500">
-          {form.responseCount} {form.responseCount === 1 ? 'phản hồi' : 'phản hồi'}
+          {form.responseCount} phản hồi
         </p>
         <p className="text-xs text-gray-400">Tạo {DATE_FORMAT.format(new Date(form.createdAt))}</p>
       </CardContent>
