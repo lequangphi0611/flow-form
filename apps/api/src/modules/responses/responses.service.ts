@@ -1,34 +1,35 @@
 import { Injectable } from '@nestjs/common'
 import { PrismaService } from '../../prisma/prisma.service'
+import type { SubmitResponseDto, SaveDraftResponseDto } from '@flowform/validators'
 
 @Injectable()
 export class ResponsesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  submit(formId: string, data: unknown) {
+  submit(formId: string, dto: SubmitResponseDto) {
     return this.prisma.formResponse.create({
       data: {
         formId,
-        sessionId: (data as any).sessionId ?? crypto.randomUUID(),
-        data: (data as any).data ?? {},
+        sessionId: dto.sessionId ?? crypto.randomUUID(),
+        data: dto.data,
         completedAt: new Date(),
       },
     })
   }
 
-  saveDraft(formId: string, data: unknown) {
+  saveDraft(formId: string, dto: SaveDraftResponseDto) {
     return this.prisma.formResponse.upsert({
-      where: { id: (data as any).responseId ?? '' },
+      where: { id: dto.responseId ?? '' },
       create: {
         formId,
-        sessionId: (data as any).sessionId ?? crypto.randomUUID(),
-        data: (data as any).data ?? {},
+        sessionId: dto.sessionId ?? crypto.randomUUID(),
+        data: dto.data,
       },
-      update: { data: (data as any).data ?? {} },
+      update: { data: dto.data },
     })
   }
 
-  findAll(formId: string, _query: unknown) {
+  findAll(formId: string) {
     return this.prisma.formResponse.findMany({
       where: { formId, completedAt: { not: null } },
       orderBy: { createdAt: 'desc' },

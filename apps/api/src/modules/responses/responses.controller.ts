@@ -1,7 +1,10 @@
-import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common'
+import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common'
 import { ResponsesService } from './responses.service'
 import { FormAccessGuard } from './guards/form-access.guard'
 import { AuthGuard } from '../../common/guards/auth.guard'
+import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe'
+import { submitResponseSchema, saveDraftResponseSchema } from '@flowform/validators'
+import type { SubmitResponseDto, SaveDraftResponseDto } from '@flowform/validators'
 
 @Controller('forms/:formId/responses')
 export class ResponsesController {
@@ -10,21 +13,27 @@ export class ResponsesController {
   // End-user submits a response — form must be published
   @Post()
   @UseGuards(FormAccessGuard)
-  submit(@Param('formId') formId: string, @Body() body: unknown) {
-    return this.responsesService.submit(formId, body)
+  submit(
+    @Param('formId') formId: string,
+    @Body(new ZodValidationPipe(submitResponseSchema)) dto: SubmitResponseDto,
+  ) {
+    return this.responsesService.submit(formId, dto)
   }
 
   // End-user saves draft — form must be published
   @Post('draft')
   @UseGuards(FormAccessGuard)
-  saveDraft(@Param('formId') formId: string, @Body() body: unknown) {
-    return this.responsesService.saveDraft(formId, body)
+  saveDraft(
+    @Param('formId') formId: string,
+    @Body(new ZodValidationPipe(saveDraftResponseSchema)) dto: SaveDraftResponseDto,
+  ) {
+    return this.responsesService.saveDraft(formId, dto)
   }
 
   // Form owner views responses — auth required
   @Get()
   @UseGuards(AuthGuard)
-  findAll(@Param('formId') formId: string, @Query() query: unknown) {
-    return this.responsesService.findAll(formId, query)
+  findAll(@Param('formId') formId: string) {
+    return this.responsesService.findAll(formId)
   }
 }
