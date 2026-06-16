@@ -10,4 +10,28 @@ tree resolving dependencies between decisions one by one.
 If a question can be answered by exploring the codebase, explore
 the codebase instead.
 
-For each question, provide your recommended answer.
+## Question format (REQUIRED)
+
+Ask ONE question at a time using the `AskUserQuestion` tool. Do NOT dump multiple questions in a single message.
+
+For each question:
+1. Use `AskUserQuestion` with 2–4 concrete options
+2. Mark your recommended option with "(Recommended)" at the end of the label
+3. Add a short `description` explaining the trade-off for each option
+4. Wait for the answer before moving to the next question
+
+```
+AskUserQuestion({
+  questions: [{
+    question: "Clear, specific question ending with ?",
+    header: "2–4 word label",   // max 12 chars
+    options: [
+      { label: "Option A (Recommended)", description: "Why this is better and its trade-off" },
+      { label: "Option B",               description: "Why someone might choose this instead" },
+    ],
+    multiSelect: false
+  }]
+})
+```
+
+After all questions are answered, summarize the decisions as a table and note any follow-up actions (backlog items, rule updates, implementation tasks).
