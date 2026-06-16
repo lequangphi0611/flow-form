@@ -69,7 +69,7 @@ model Form {
   schema      Json     // FormSchema (steps, fields, logic)
   settings    Json     @default("{}")
   theme       Json     @default("{}")
-  published   Boolean  @default(false)
+  status      String   @default("draft")
   ownerId     String
   owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())

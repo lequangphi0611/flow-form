@@ -64,3 +64,10 @@ export const createFormSchema = z.object({
 })
 
 export type CreateFormInput = z.infer<typeof createFormSchema>
+
+// Lightweight schema cho luồng "tạo nháp nhanh" từ dashboard (chỉ cần title)
+export const createFormDraftSchema = z.object({
+  title: z.string().min(1, 'Tiêu đề không được để trống').max(100),
+})
+
+export type CreateFormDraftDto = z.infer<typeof createFormDraftSchema>
