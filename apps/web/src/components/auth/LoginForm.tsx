@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { FormField } from '@/components/common/FormField'
@@ -39,28 +40,43 @@ export function LoginForm({ isPending, error, onSubmit }: LoginFormProps) {
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Đăng nhập</h1>
 
       {error && (
-        <p className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+        <p role="alert" className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
           {error}
         </p>
       )}
 
       <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
-        <FormField label="Email" error={errors.email?.message} required>
-          <Input {...register('email')} type="email" placeholder="you@example.com" />
+        <FormField label="Email" name="email" error={errors.email?.message} required>
+          <Input
+            {...register('email')}
+            id="email"
+            type="email"
+            placeholder="you@example.com"
+            aria-invalid={!!errors.email}
+            aria-describedby={errors.email ? 'email-error' : undefined}
+          />
         </FormField>
 
-        <FormField label="Mật khẩu" error={errors.password?.message} required>
-          <Input {...register('password')} type="password" placeholder="Mật khẩu của bạn" />
+        <FormField label="Mật khẩu" name="password" error={errors.password?.message} required>
+          <Input
+            {...register('password')}
+            id="password"
+            type="password"
+            placeholder="Mật khẩu của bạn"
+            aria-invalid={!!errors.password}
+            aria-describedby={errors.password ? 'password-error' : undefined}
+          />
         </FormField>
 
-        <Button type="submit" disabled={isPending} className="w-full">
+        <Button type="submit" disabled={isPending} aria-busy={isPending} className="w-full">
+          {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {isPending ? 'Đang đăng nhập...' : 'Đăng nhập'}
         </Button>
       </form>
 
       <p className="mt-4 text-center text-sm text-gray-500">
         Chưa có tài khoản?{' '}
-        <Link href="/register" className="text-blue-500 hover:underline">
+        <Link href="/register" className="text-blue-600 hover:underline">
           Đăng ký
         </Link>
       </p>
