@@ -98,6 +98,19 @@ export function FormGrid({ forms, onDelete }: FormGridProps) {
 }
 ```
 
+```tsx
+// ❌ — Presenter tự fetch data
+export function FormGrid() {
+  const { data: forms } = useQuery(...)  // ❌ Presenter không được tự fetch
+
+  return (
+    <div className="grid ...">
+      {forms?.map((form) => <FormCard key={form.id} form={form} />)}
+    </div>
+  )
+}
+```
+
 ---
 
 ### 3. Callback từ Container xuống Presenter
@@ -171,6 +184,33 @@ export function BuilderCanvasContainer() {
 }
 ```
 
+```tsx
+// ✅ — StepCanvas: Presenter thuần, không biết Zustand tồn tại
+// src/components/builder/StepCanvas.tsx
+import type { StepSchema, FieldSchema } from '@flowform/types'
+import { FieldRenderer } from './FieldRenderer'
+
+interface StepCanvasProps {
+  step: StepSchema
+  onUpdateField: (fieldId: string, updates: Partial<FieldSchema>) => void
+}
+
+export function StepCanvas({ step, onUpdateField }: StepCanvasProps) {
+  return (
+    <div className="flex flex-col gap-4 p-6 max-w-2xl mx-auto">
+      <h2 className="text-xl font-semibold">{step.title}</h2>
+      {step.fields.map((field) => (
+        <FieldRenderer
+          key={field.id}
+          field={field}
+          onUpdate={(updates) => onUpdateField(field.id, updates)}
+        />
+      ))}
+    </div>
+  )
+}
+```
+
 ---
 
 ### 5. Server Component làm Container — không cần `'use client'`
@@ -197,6 +237,7 @@ export default async function FormsPage() {
 
 ## Cấu trúc thư mục
 
+> Xem `09-atomic-design.md` để biết cấu trúc đầy đủ.
 > Container nằm trong subfolder `containers/` của từng feature:
 > ```
 > components/[feature]/
@@ -204,6 +245,8 @@ export default async function FormsPage() {
 > │   └── [Feature]Container.tsx   ← Container
 > └── [Feature].tsx                ← Presenter
 > ```
+
+---
 
 ---
 

@@ -166,6 +166,7 @@ app/(auth)/login/page.tsx                       ← chỉ import LoginContainer,
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { signIn } from '@/lib/auth-client'
+import { toast } from 'sonner'
 import { LoginForm } from '../LoginForm'
 
 export function LoginContainer() {
@@ -189,6 +190,60 @@ export function LoginContainer() {
   }
 
   return <LoginForm isPending={isPending} error={error} onSubmit={handleSubmit} />
+}
+```
+
+```tsx
+// ✅ — components/auth/LoginForm.tsx (Presenter)
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+
+const loginSchema = z.object({
+  email: z.string().email('Email không hợp lệ'),
+  password: z.string().min(1, 'Nhập mật khẩu'),
+})
+type LoginInput = z.infer<typeof loginSchema>
+
+interface LoginFormProps {
+  isPending: boolean
+  error: string | null
+  onSubmit: (email: string, password: string) => void
+}
+
+export function LoginForm({ isPending, error, onSubmit }: LoginFormProps) {
+  const { register, handleSubmit, formState: { errors } } = useForm<LoginInput>({
+    resolver: zodResolver(loginSchema),
+  })
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="w-full max-w-sm bg-white p-8 rounded-xl shadow-sm border">
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">Đăng nhập</h1>
+        {error && (
+          <p className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+            {error}
+          </p>
+        )}
+        <form onSubmit={handleSubmit((d) => onSubmit(d.email, d.password))} className="space-y-4">
+          <div>
+            <input {...register('email')} type="email" placeholder="Email"
+              className="w-full h-10 px-3 border rounded-md text-sm" />
+            {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email.message}</p>}
+          </div>
+          <div>
+            <input {...register('password')} type="password" placeholder="Mật khẩu"
+              className="w-full h-10 px-3 border rounded-md text-sm" />
+            {errors.password && <p className="text-xs text-red-500 mt-1">{errors.password.message}</p>}
+          </div>
+          <button type="submit" disabled={isPending}
+            className="w-full h-10 bg-blue-500 text-white rounded-md text-sm font-medium hover:bg-blue-600 disabled:opacity-50">
+            {isPending ? 'Đang đăng nhập...' : 'Đăng nhập'}
+          </button>
+        </form>
+      </div>
+    </div>
+  )
 }
 ```
 

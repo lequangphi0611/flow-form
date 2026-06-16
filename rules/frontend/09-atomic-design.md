@@ -175,3 +175,13 @@ export function FormCard() {
 // không tái sử dụng được dù sau này cần (vd: trang invite cũng cần form tương tự).
 // Ngay cả component chỉ dùng 1 lần cũng phải đặt vào components/[feature]/ trước.
 ```
+
+```
+// ❌ — Đặt component vào _components/ cùng route thay vì components/[feature]/
+// app/(auth)/register/_components/RegisterForm.tsx  ← SAI
+// Đúng: components/auth/RegisterForm.tsx
+//
+// Lý do: _components/ là anti-pattern — component bị giam trong route,
+// không tái sử dụng được dù sau này cần (vd: trang invite cũng cần form tương tự).
+// Ngay cả component chỉ dùng 1 lần cũng phải đặt vào components/[feature]/ trước.
+```

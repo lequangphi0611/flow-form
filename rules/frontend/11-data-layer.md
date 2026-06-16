@@ -25,12 +25,22 @@ src/lib/
 |---|---|---|
 | **Môi trường** | Server (Node.js) | Browser |
 | **Dùng trong** | Server Component, Server Action | `queryFn`, `mutationFn` |
+| **Auth** | Đọc cookie/header từ `next/headers` | Gửi cookie tự động (credentials) |
 | **URL gốc** | `process.env.API_URL` (private) | `process.env.NEXT_PUBLIC_API_URL` |
 | **Cache** | `React.cache()` + fetch cache options | TanStack Query cache |
+| **Return type** | Data trực tiếp (404 → `notFound()`, lỗi khác → throw) | Data trực tiếp, throw khi lỗi |
 
 ---
 
 ## `src/lib/data/` — Server-side fetchers
+
+### Quy tắc
+
+- Wrap bằng `React.cache()` nếu cùng data có thể được gọi từ nhiều Server Component trong 1 request
+- Luôn chỉ định cache strategy rõ ràng (`no-store` hoặc `next: { revalidate }`)
+- 404 → gọi `notFound()` từ `next/navigation` (Next.js render `not-found.tsx` tự động)
+- Lỗi khác → throw Error (Next.js bắt bằng `error.tsx`)
+- Không dùng trong Client Component
 
 ```ts
 // ✅ — src/lib/data/forms.ts
@@ -38,8 +48,10 @@ import { cache } from 'react'
 import { notFound } from 'next/navigation'
 import type { FormSchema } from '@flowform/types'
 
-const API = process.env.API_URL
+const API = process.env.API_URL  // server-only, không có NEXT_PUBLIC_
 
+// Dùng cho Builder + generateMetadata — React.cache() dedup trong 1 request
+// 404 → notFound() để Next.js render not-found.tsx, không cần page tự check null
 export const getForm = cache(async (id: string): Promise<FormSchema> => {
   const res = await fetch(`${API}/api/forms/${id}`, { cache: 'no-store' })
   if (res.status === 404) notFound()
@@ -47,6 +59,7 @@ export const getForm = cache(async (id: string): Promise<FormSchema> => {
   return res.json()
 })
 
+// Dùng cho public form — cache dài, invalidate bằng tag
 export const getPublicForm = cache(async (id: string): Promise<FormSchema> => {
   const res = await fetch(`${API}/api/forms/${id}`, {
     next: { revalidate: 3600, tags: [`form-${id}`] },
@@ -56,6 +69,7 @@ export const getPublicForm = cache(async (id: string): Promise<FormSchema> => {
   return res.json()
 })
 
+// Dashboard: luôn fresh, không cần cache()
 export async function getForms(): Promise<FormSchema[]> {
   const res = await fetch(`${API}/api/forms`, { cache: 'no-store' })
   if (!res.ok) throw new Error(`getForms failed: ${res.status}`)
@@ -63,26 +77,76 @@ export async function getForms(): Promise<FormSchema[]> {
 }
 ```
 
+```ts
+// ✅ — src/lib/data/analytics.ts
+import { cache } from 'react'
+import type { FormSummary, FunnelStep } from '@flowform/types'
+
+const API = process.env.API_URL
+
+export const getAnalyticsSummary = cache(async (formId: string): Promise<FormSummary> => {
+  const res = await fetch(`${API}/api/forms/${formId}/analytics/summary`, {
+    next: { revalidate: 300 },
+  })
+  if (!res.ok) throw new Error(`getAnalyticsSummary failed: ${res.status}`)
+  return res.json()
+})
+
+export const getFunnelData = cache(async (formId: string): Promise<FunnelStep[]> => {
+  const res = await fetch(`${API}/api/forms/${formId}/analytics/funnel`, {
+    next: { revalidate: 300 },
+  })
+  if (!res.ok) throw new Error(`getFunnelData failed: ${res.status}`)
+  return res.json()
+})
+```
+
+### Dùng trong Server Component
+
 ```tsx
 // ✅ — page.tsx gọi qua lib/data, không gọi fetch trực tiếp
+// src/app/(builder)/forms/[id]/builder/page.tsx
 import { getForm } from '@/lib/data/forms'
+
+export async function generateMetadata({ params }: Props) {
+  const { id } = await params
+  // getForm gọi notFound() tự động nếu 404 — không cần catch null ở đây
+  const form = await getForm(id).catch(() => null)
+  return { title: form ? `Builder — ${form.title}` : 'Builder' }
+}
 
 export default async function BuilderPage({ params }: Props) {
   const { id } = await params
-  const form = await getForm(id)  // 404 → notFound() tự động
+  const form = await getForm(id)  // ← 404 → notFound() tự động; React.cache() → 0 network call thêm
   return <BuilderShell initialForm={form} />
 }
+```
 
-// ❌ — fetch trực tiếp trong page
-const form = await fetch(`${process.env.API_URL}/api/forms/${id}`).then(r => r.json()) // ❌
+```tsx
+// ❌ — Gọi fetch trực tiếp trong page
+export default async function BuilderPage({ params }: Props) {
+  const { id } = await params
+  const form = await fetch(`${process.env.API_URL}/api/forms/${id}`).then(r => r.json()) // ❌
+  return <BuilderShell initialForm={form} />
+}
 ```
 
 ---
 
 ## `src/lib/api/` — Client-side API functions
 
+### Quy tắc
+
+- Chỉ dùng trong `queryFn` và `mutationFn` của TanStack Query
+- Dùng `NEXT_PUBLIC_API_URL` (public env)
+- Throw `Error` khi response không OK — TanStack Query tự bắt
+- Không dùng trong Server Component
+
 ```ts
 // ✅ — src/lib/api/forms.ts
+import type { FormSchema } from '@flowform/types'
+import type { CreateFormInput } from '@flowform/validators'
+
 const API = process.env.NEXT_PUBLIC_API_URL
 
 async function handleResponse<T>(res: Response): Promise<T> {
@@ -95,10 +159,12 @@ async function handleResponse<T>(res: Response): Promise<T> {
 
 export const formsApi = {
   list: (): Promise<FormSchema[]> =>
-    fetch(`${API}/api/forms`, { credentials: 'include' }).then(handleResponse<FormSchema[]>),
+    fetch(`${API}/api/forms`, { credentials: 'include' })
+      .then(handleResponse<FormSchema[]>),
 
   get: (id: string): Promise<FormSchema> =>
-    fetch(`${API}/api/forms/${id}`, { credentials: 'include' }).then(handleResponse<FormSchema>),
+    fetch(`${API}/api/forms/${id}`, { credentials: 'include' })
+      .then(handleResponse<FormSchema>),
 
   create: (data: CreateFormInput): Promise<FormSchema> =>
     fetch(`${API}/api/forms`, {
@@ -130,17 +196,38 @@ export const formsApi = {
 }
 ```
 
+### Dùng trong TanStack Query
+
 ```tsx
 // ✅ — queryFn gọi qua lib/api, không gọi fetch trực tiếp
-useQuery({
-  queryKey: formKeys.detail(id),
-  queryFn: () => formsApi.get(id),  // ← lib/api
-})
+'use client'
 
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { formsApi } from '@/lib/api/forms'
+import { formKeys } from '@/lib/query-keys'
+
+export function useForm(id: string) {
+  return useQuery({
+    queryKey: formKeys.detail(id),
+    queryFn: () => formsApi.get(id),  // ← lib/api, không phải fetch()
+  })
+}
+
+export function useDeleteForm() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => formsApi.delete(id),  // ← lib/api
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: formKeys.all }),
+  })
+}
+```
+
+```tsx
 // ❌ — fetch trực tiếp trong queryFn
 useQuery({
   queryKey: formKeys.detail(id),
-  queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/forms/${id}`).then(r => r.json()),  // ❌
+  queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/forms/${id}`)
+    .then(r => r.json()),  // ❌ — phân tán logic, không tái sử dụng, không error handling nhất quán
 })
 ```
 
@@ -166,4 +253,6 @@ Server Component / Server Action
 
 Client Component (TanStack Query)
   └── src/lib/api/*.ts   ──→  NestJS API (process.env.NEXT_PUBLIC_API_URL)
+
+app/api/ Route Handlers       ← xem rule 12-route-handlers.md
 ```
