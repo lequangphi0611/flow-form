@@ -1,11 +1,22 @@
-import { Controller, Get, Post, Delete, Body, Param, UseGuards, HttpCode, HttpStatus } from '@nestjs/common'
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common'
 import { FormsService } from './forms.service'
 import { AuthGuard } from '../../common/guards/auth.guard'
 import { FormOwnerGuard } from './guards/form-owner.guard'
 import { CurrentUser } from '../../common/decorators/current-user.decorator'
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe'
-import { createFormDraftSchema } from '@flowform/validators'
-import type { CreateFormDraftDto } from '@flowform/validators'
+import { createFormDraftSchema, updateFormSchema } from '@flowform/validators'
+import type { CreateFormDraftDto, UpdateFormDto } from '@flowform/validators'
 import type { SessionUser } from '../../common/types/session.types'
 
 @Controller('forms')
@@ -37,6 +48,27 @@ export class FormsController {
   }
 
   // === OWNERSHIP REQUIRED ===
+
+  @Get(':id/editor')
+  @UseGuards(AuthGuard, FormOwnerGuard)
+  getFormForEditor(@Param('id') id: string) {
+    return this.formsService.getFormOrThrow(id)
+  }
+
+  @Patch(':id')
+  @UseGuards(AuthGuard, FormOwnerGuard)
+  updateForm(
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(updateFormSchema)) dto: UpdateFormDto,
+  ) {
+    return this.formsService.updateForm(id, dto)
+  }
+
+  @Patch(':id/publish')
+  @UseGuards(AuthGuard, FormOwnerGuard)
+  publishForm(@Param('id') id: string) {
+    return this.formsService.publishForm(id)
+  }
 
   @Delete(':id')
   @UseGuards(AuthGuard, FormOwnerGuard)

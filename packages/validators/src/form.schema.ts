@@ -78,3 +78,14 @@ export const formBodySchema = z.object({
 })
 
 export type FormBody = z.infer<typeof formBodySchema>
+
+// Schema cho PATCH /api/forms/:id — builder auto-save (partial update)
+export const updateFormSchema = z.object({
+  title:       z.string().min(1, 'Tiêu đề không được để trống').max(100).optional(),
+  description: z.string().max(500).nullable().optional(),
+  schema:      formBodySchema.optional(),
+  settings:    formSettingsSchema.optional(),
+  theme:       themeConfigSchema.optional(),
+})
+
+export type UpdateFormDto = z.infer<typeof updateFormSchema>

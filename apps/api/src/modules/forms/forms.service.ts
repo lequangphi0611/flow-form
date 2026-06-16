@@ -1,6 +1,12 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common'
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+  UnprocessableEntityException,
+} from '@nestjs/common'
 import { FormsRepository } from './forms.repository'
-import type { CreateFormDraftDto } from '@flowform/validators'
+import type { CreateFormDraftDto, UpdateFormDto } from '@flowform/validators'
 import type { FormSchema } from '@flowform/types'
 
 @Injectable()
@@ -46,6 +52,36 @@ export class FormsService {
   async createForm(userId: string, dto: CreateFormDraftDto): Promise<FormSchema> {
     this.logger.log(`Creating form for user ${userId}`)
     return this.formsRepository.create(userId, dto.title)
+  }
+
+  async updateForm(id: string, dto: UpdateFormDto): Promise<FormSchema> {
+    // FormOwnerGuard has already verified existence and ownership
+    return this.formsRepository.update(id, dto)
+  }
+
+  async publishForm(id: string): Promise<FormSchema> {
+    // FormOwnerGuard has already verified existence and ownership
+    const form = await this.getFormOrThrow(id)
+
+    if (form.status !== 'draft') {
+      throw new BadRequestException({
+        type: 'https://flowform.dev/errors/invalid-transition',
+        title: 'Invalid Status Transition',
+        status: 400,
+        detail: `Form must be in 'draft' status to publish. Current status: '${form.status}'.`,
+      })
+    }
+
+    if (form.steps.length === 0) {
+      throw new UnprocessableEntityException({
+        type: 'https://flowform.dev/errors/empty-form',
+        title: 'Form Cannot Be Published',
+        status: 422,
+        detail: 'Form must have at least one step before publishing.',
+      })
+    }
+
+    return this.formsRepository.publish(id)
   }
 
   async deleteForm(id: string): Promise<void> {

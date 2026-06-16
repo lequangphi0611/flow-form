@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common'
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library'
 import { PrismaService } from '../../prisma/prisma.service'
 import { formBodySchema, formSettingsSchema, themeConfigSchema } from '@flowform/validators'
+import type { UpdateFormDto } from '@flowform/validators'
 import { DEFAULT_THEME, DEFAULT_SETTINGS } from '@flowform/types'
 import type { FormSchema, FormStatus } from '@flowform/types'
 
@@ -55,6 +56,14 @@ export class FormsRepository {
     })
   }
 
+  // Fetch ownership + status — used by FormAccessGuard (cross-module)
+  async findStatusById(id: string): Promise<{ ownerId: string; status: string } | null> {
+    return this.prisma.form.findUnique({
+      where: { id },
+      select: { ownerId: true, status: true },
+    })
+  }
+
   // Public fetch — only returns published forms (anonymous access)
   async findPublishedById(id: string): Promise<FormSchema | null> {
     const row = await this.prisma.form.findUnique({
@@ -85,6 +94,30 @@ export class FormsRepository {
       include: { _count: { select: { responses: true } } },
     })
     return this.hydrate(row as RawForm)
+  }
+
+  async update(id: string, dto: UpdateFormDto): Promise<FormSchema> {
+    const row = await this.prisma.form.update({
+      where: { id },
+      data: {
+        ...(dto.title       !== undefined && { title: dto.title }),
+        ...(dto.description !== undefined && { description: dto.description }),
+        ...(dto.schema      !== undefined && { schema: dto.schema as object }),
+        ...(dto.settings    !== undefined && { settings: dto.settings as object }),
+        ...(dto.theme       !== undefined && { theme: dto.theme as object }),
+      },
+      include: { _count: { select: { responses: true } } },
+    })
+    return this.hydrate(row as unknown as RawForm)
+  }
+
+  async publish(id: string): Promise<FormSchema> {
+    const row = await this.prisma.form.update({
+      where: { id },
+      data: { status: 'published' },
+      include: { _count: { select: { responses: true } } },
+    })
+    return this.hydrate(row as unknown as RawForm)
   }
 
   async delete(id: string): Promise<void> {
