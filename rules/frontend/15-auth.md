@@ -195,9 +195,16 @@ export function LoginContainer() {
 
 ```tsx
 // ✅ — components/auth/LoginForm.tsx (Presenter)
+'use client'
+
+import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { Loader2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { FormField } from '@/components/common/FormField'
 
 const loginSchema = z.object({
   email: z.string().email('Email không hợp lệ'),
@@ -217,31 +224,51 @@ export function LoginForm({ isPending, error, onSubmit }: LoginFormProps) {
   })
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-full max-w-sm bg-white p-8 rounded-xl shadow-sm border">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Đăng nhập</h1>
-        {error && (
-          <p className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
-            {error}
-          </p>
-        )}
-        <form onSubmit={handleSubmit((d) => onSubmit(d.email, d.password))} className="space-y-4">
-          <div>
-            <input {...register('email')} type="email" placeholder="Email"
-              className="w-full h-10 px-3 border rounded-md text-sm" />
-            {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email.message}</p>}
-          </div>
-          <div>
-            <input {...register('password')} type="password" placeholder="Mật khẩu"
-              className="w-full h-10 px-3 border rounded-md text-sm" />
-            {errors.password && <p className="text-xs text-red-500 mt-1">{errors.password.message}</p>}
-          </div>
-          <button type="submit" disabled={isPending}
-            className="w-full h-10 bg-blue-500 text-white rounded-md text-sm font-medium hover:bg-blue-600 disabled:opacity-50">
-            {isPending ? 'Đang đăng nhập...' : 'Đăng nhập'}
-          </button>
-        </form>
-      </div>
+    <div className="w-full max-w-sm bg-white p-8 rounded-xl shadow-sm border">
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">Đăng nhập</h1>
+
+      {/* Lỗi từ server (sai email/mật khẩu) — role="alert" để screen reader đọc ngay */}
+      {error && (
+        <p role="alert" className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+          {error}
+        </p>
+      )}
+
+      <form onSubmit={handleSubmit((d) => onSubmit(d.email, d.password))} className="space-y-4">
+        {/* FormField tự tạo <Label htmlFor>, error <p id role="alert"> */}
+        <FormField label="Email" name="email" error={errors.email?.message} required>
+          <Input
+            {...register('email')}
+            id="email"
+            type="email"
+            placeholder="you@example.com"
+            aria-invalid={!!errors.email}
+            aria-describedby={errors.email ? 'email-error' : undefined}
+          />
+        </FormField>
+
+        <FormField label="Mật khẩu" name="password" error={errors.password?.message} required>
+          <Input
+            {...register('password')}
+            id="password"
+            type="password"
+            placeholder="Mật khẩu của bạn"
+            aria-invalid={!!errors.password}
+            aria-describedby={errors.password ? 'password-error' : undefined}
+          />
+        </FormField>
+
+        {/* aria-busy thông báo loading cho screen reader; Loader2 spinner theo rule 14 §6 */}
+        <Button type="submit" disabled={isPending} aria-busy={isPending} className="w-full">
+          {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {isPending ? 'Đang đăng nhập...' : 'Đăng nhập'}
+        </Button>
+      </form>
+
+      <p className="mt-4 text-center text-sm text-gray-500">
+        Chưa có tài khoản?{' '}
+        <Link href="/register" className="text-blue-600 hover:underline">Đăng ký</Link>
+      </p>
     </div>
   )
 }
@@ -287,6 +314,7 @@ export default function LoginPage() {
 
 import { useRouter } from 'next/navigation'
 import { signOut } from '@/lib/auth-client'
+import { Button } from '@/components/ui/button'
 
 export function SignOutButton() {
   const router = useRouter()
@@ -297,9 +325,9 @@ export function SignOutButton() {
   }
 
   return (
-    <button onClick={handleSignOut} className="text-sm text-gray-500 hover:text-gray-700">
+    <Button variant="ghost" size="sm" onClick={handleSignOut}>
       Đăng xuất
-    </button>
+    </Button>
   )
 }
 ```

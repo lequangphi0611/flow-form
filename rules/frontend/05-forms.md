@@ -134,7 +134,7 @@ function StepSettingsForm({ step }: { step: StepSchema }) {
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <input {...register('title')} placeholder="Tiêu đề bước" />
-      {errors.title && <p className="text-red-500 text-sm">{errors.title.message}</p>}
+      {errors.title && <p className="text-red-600 text-sm">{errors.title.message}</p>}
 
       <textarea {...register('description')} placeholder="Mô tả (tuỳ chọn)" />
     </form>
@@ -208,7 +208,7 @@ function StepSettingsForm() {
   return (
     <input {...register('title')} />
     {errors.title && (
-      <p className="text-red-500 text-sm">{errors.title.message}</p>  // lấy từ Zod
+      <p className="text-red-600 text-sm">{errors.title.message}</p>  // lấy từ Zod
     )}
   )
 }
@@ -217,13 +217,99 @@ function StepSettingsForm() {
 ```tsx
 // ❌ — Hardcode error message trong component
 {!titleValue && (
-  <p className="text-red-500 text-sm">Tiêu đề không được để trống</p>  // ❌ duplicate với schema
+  <p className="text-red-600 text-sm">Tiêu đề không được để trống</p>  // ❌ duplicate với schema
 )}
 ```
 
 ---
 
-## 6. Form trong Builder vs Form engine — tách biệt hoàn toàn
+## 6. Accessibility bắt buộc cho mọi form
+
+Mọi form — auth, settings, hay builder — đều phải đáp ứng checklist sau. Thiếu bất kỳ mục nào là vi phạm rule.
+
+### 6a. Input: aria-invalid + aria-describedby
+
+```tsx
+// ✅ — Kết nối input với error message qua aria-describedby
+<Input
+  {...register('email')}
+  id="email"
+  type="email"
+  aria-invalid={!!errors.email}
+  aria-describedby={errors.email ? 'email-error' : undefined}
+/>
+{errors.email && (
+  <p id="email-error" role="alert" className="text-xs text-red-600">
+    {errors.email.message}
+  </p>
+)}
+
+// ❌ — Thiếu aria → screen reader không đọc được lỗi
+<Input {...register('email')} id="email" type="email" />
+{errors.email && <p className="text-xs text-red-500">{errors.email.message}</p>}
+//                                        ↑ sai màu  ↑ thiếu id, role="alert"
+```
+
+### 6b. Error message: id + role="alert"
+
+- `id={`${fieldName}-error`}` — ID cố định để `aria-describedby` trỏ vào
+- `role="alert"` — screen reader thông báo ngay khi error xuất hiện
+- `text-red-600` — màu chuẩn cho validation error (không phải `text-red-500`)
+
+### 6c. Submit button: aria-busy + Loader2 spinner
+
+```tsx
+// ✅ — Button loading state đúng chuẩn
+import { Loader2 } from 'lucide-react'
+
+<Button type="submit" disabled={isPending} aria-busy={isPending} className="w-full">
+  {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+  {isPending ? 'Đang lưu...' : 'Lưu'}
+</Button>
+
+// ❌ — Thiếu aria-busy, thiếu spinner, dùng text thô
+<button type="submit" disabled={isPending}>
+  {isPending ? 'Đang lưu...' : 'Lưu'}
+</button>
+```
+
+### 6d. Dùng `FormField` từ `components/common/`
+
+`FormField` tự tạo `id`, `htmlFor`, và error `<p>` đúng chuẩn. Không inline error paragraph thủ công.
+
+```tsx
+// ✅ — Dùng FormField — bao gồm Label + htmlFor + error id/role="alert"
+import { FormField } from '@/components/common/FormField'
+
+<FormField label="Email" name="email" error={errors.email?.message} required>
+  <Input
+    {...register('email')}
+    id="email"
+    type="email"
+    aria-invalid={!!errors.email}
+    aria-describedby={errors.email ? 'email-error' : undefined}
+  />
+</FormField>
+
+// ❌ — Inline error paragraph bỏ qua id/role="alert" cần thiết
+<div>
+  <label htmlFor="email">Email</label>
+  <Input {...register('email')} id="email" type="email" />
+  {errors.email && <p className="text-xs text-red-500">{errors.email.message}</p>}
+</div>
+```
+
+### Checklist nhanh — dán vào PR review
+
+- [ ] Mỗi `<Input>` có `aria-invalid` và `aria-describedby` khi có lỗi
+- [ ] Mỗi error `<p>` có `id="{fieldName}-error"` và `role="alert"`
+- [ ] Màu error dùng `text-red-600`, không phải `text-red-500`
+- [ ] Submit button có `disabled={isPending}`, `aria-busy={isPending}`, và `<Loader2>` khi pending
+- [ ] Dùng `<FormField>` từ `components/common/` thay vì tự viết label + error
+
+---
+
+## 7. Form trong Builder vs Form engine — tách biệt hoàn toàn
 
 ### Builder forms — form để cấu hình (form owner dùng)
 - Mục đích: chỉnh title của step, cài đặt validation của field, cấu hình theme...
