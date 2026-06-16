@@ -94,7 +94,62 @@ export function FormDetailContainer({ formId }: { formId: string }) {
 
 ---
 
-## 3. Mutation pattern
+## 3. Mutation hooks — BẮT BUỘC tách ra custom hook
+
+Mọi `useMutation` call phải nằm trong một **custom hook riêng** đặt tại `src/hooks/`.
+Không được viết `useMutation(...)` trực tiếp trong component hay container.
+
+**Lý do:**
+- Mutation logic (queryClient, invalidation, error) dùng lại được nhiều nơi
+- Container chỉ orchestrate, không chứa mutation config
+- Dễ test hook độc lập
+
+**Naming:** `use[Action][Entity]` — camelCase, ví dụ: `useDeleteForm`, `useCreateForm`, `useUpdateFormSettings`
+
+**Đặt file:** `src/hooks/[entity]/use[Action][Entity].ts`
+- `src/hooks/forms/useDeleteForm.ts`
+- `src/hooks/forms/useCreateForm.ts`
+
+**Khi `onSuccess` cần gọi logic của component** (setState, router.push...) → nhận vào qua callback param:
+
+```ts
+// src/hooks/forms/useDeleteForm.ts  ✅
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { formsApi } from '@/lib/api/forms'
+import { formKeys } from '@/lib/query-keys'
+
+export function useDeleteForm(options?: { onSuccess?: () => void }) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: string) => formsApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: formKeys.all })
+      options?.onSuccess?.()
+    },
+  })
+}
+
+// Container dùng:  ✅
+const { mutate: deleteForm, isPending: isDeleting } = useDeleteForm({
+  onSuccess: () => setDeletingFormId(null),
+})
+```
+
+```tsx
+// ❌ — useMutation inline trong container
+const { mutate: deleteForm } = useMutation({
+  mutationFn: (id: string) => formsApi.delete(id),
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: formKeys.all })
+    setDeletingFormId(null)  // ❌ component state lẫn vào mutation config
+  },
+})
+```
+
+---
+
+## 4. Mutation pattern — ví dụ đầy đủ
 
 ```tsx
 // ✅ — Pattern chuẩn: mutate → toast → invalidate → UI tự cập nhật
@@ -141,7 +196,7 @@ function SettingsPanel({ form }: { form: FormSchema }) {
 
 ---
 
-## 4. Optimistic update — dùng cho Builder auto-save
+## 5. Optimistic update — dùng cho Builder auto-save
 
 Auto-save trong Builder không cần chờ server. Dùng optimistic để UX mượt.
 

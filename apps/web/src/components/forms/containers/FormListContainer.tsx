@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { formKeys } from '@/lib/query-keys'
 import { formsApi } from '@/lib/api/forms'
+import { useDeleteForm } from '@/hooks/forms/useDeleteForm'
 import { FormGrid } from '../FormGrid'
 import { FormGridSkeleton } from '../FormGridSkeleton'
 import { DeleteFormDialog } from '../DeleteFormDialog'
@@ -21,12 +22,8 @@ export function FormListContainer() {
     queryFn: formsApi.list,
   })
 
-  const { mutate: deleteForm, isPending: isDeleting } = useMutation({
-    mutationFn: (id: string) => formsApi.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: formKeys.all })
-      setDeletingFormId(null)
-    },
+  const { mutate: deleteForm, isPending: isDeleting } = useDeleteForm({
+    onSuccess: () => setDeletingFormId(null),
   })
 
   const deletingForm = forms.find((f) => f.id === deletingFormId)

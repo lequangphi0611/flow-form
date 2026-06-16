@@ -2,16 +2,14 @@
 
 import { Plus, Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useMutation } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
-import { formsApi } from '@/lib/api/forms'
+import { useCreateForm } from '@/hooks/forms/useCreateForm'
 
 export function CreateFormButton() {
   const router = useRouter()
 
-  const { mutate, isPending } = useMutation({
-    mutationFn: () => formsApi.create({ title: 'Form chưa có tên' }),
-    onSuccess: (data) => router.push(`/forms/${data.id}/builder`),
+  const { mutate, isPending } = useCreateForm({
+    onSuccess: (form) => router.push(`/forms/${form.id}/builder`),
   })
 
   return (
