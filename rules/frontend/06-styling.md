@@ -225,7 +225,63 @@ export function FormsGrid({ forms }: { forms: FormSchema[] }) {
 
 ---
 
-## 8. cva — dùng cho component có nhiều variants
+## 8. Dùng UI primitives — không dùng raw HTML khi đã có component
+
+Project dùng **shadcn/ui** trên nền **Radix UI**. Trigger components hỗ trợ `asChild` — dùng để compose với `Button` từ `components/ui/`.
+
+### Nguyên tắc: raw HTML element chỉ chấp nhận ở 2 trường hợp
+
+| Trường hợp | Lý do |
+|---|---|
+| dnd-kit drag handle | Spread `{...attributes}` + `{...listeners}` — không nên bọc thêm |
+| Button nhỏ inline trong styled chip (ví dụ: X trong tag badge) | Kích thước quá nhỏ, `size="icon"` vẫn lớn hơn cần |
+
+Mọi trường hợp còn lại: dùng component từ `components/ui/`.
+
+### Trigger + `asChild` — không dùng raw `<button>`
+
+```tsx
+// ❌ — Raw button bên trong trigger: tạo nested <button><button>
+<DropdownMenuTrigger>
+  <button className="inline-flex ...">Thêm câu hỏi</button>
+</DropdownMenuTrigger>
+
+// ✅ — asChild: Radix merge props của trigger vào Button, không tạo nested element
+<DropdownMenuTrigger asChild>
+  <Button variant="outline" size="sm" className="w-full gap-2">
+    <Plus className="h-4 w-4" />
+    Thêm câu hỏi
+  </Button>
+</DropdownMenuTrigger>
+```
+
+`asChild` hoạt động với mọi Radix trigger: `DropdownMenuTrigger`, `DialogTrigger`, `DialogClose`, v.v.
+
+### Toggle / switch — dùng `<Switch>` từ `ui/switch.tsx`
+
+```tsx
+// ❌ — Custom implementation với raw button
+<button type="button" role="switch" aria-checked={field.required}
+  className="relative inline-flex h-4 w-7 rounded-full ...">
+  <span className="... translate-x-3" />
+</button>
+
+// ✅ — Dùng Switch từ components/ui/
+import { Switch } from '@/components/ui/switch'
+
+<Switch
+  checked={field.required}
+  onCheckedChange={(checked) => onUpdate({ required: checked })}
+/>
+```
+
+### Thêm UI primitive mới
+
+Khi cần primitive chưa có trong `components/ui/` (ví dụ: `tooltip`, `popover`), tạo wrapper từ `@radix-ui/react-<name>` theo pattern của `button.tsx` và `dropdown-menu.tsx` — **không** tự implement bằng raw HTML.
+
+---
+
+## 9. cva — dùng cho component có nhiều variants
 
 ```tsx
 // ✅ — Dùng cva khi component có nhiều variant combinations

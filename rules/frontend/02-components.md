@@ -133,39 +133,36 @@ export function Panel({ children, className }: { children: React.ReactNode; clas
 
 ## 3. shadcn/ui — cách dùng đúng
 
-### KHÔNG modify file trong `components/ui/`
-Các file trong `src/components/ui/` do shadcn/ui generate. Chỉnh sửa trực tiếp sẽ bị ghi đè khi chạy `npx shadcn@latest add`.
+Các file trong `src/components/ui/` là Radix UI wrappers được viết/tuỳ chỉnh cho project. Có thể sửa trực tiếp khi cần điều chỉnh variant, styling của primitive. **Lưu ý:** chạy `npx shadcn add <name>` sẽ overwrite file — review diff kỹ trước khi commit.
 
 ```tsx
-// ❌ — Đừng sửa trực tiếp components/ui/button.tsx
-// src/components/ui/button.tsx
-export const Button = React.forwardRef(({ className, variant, ...props }, ref) => {
-  return (
-    <button
-      className={cn('my-custom-default', buttonVariants({ variant }), className)}  // ❌ sửa file gốc
-    />
-  )
+// ✅ — Sửa trực tiếp ui/ khi cần thay đổi primitive (ví dụ: thêm variant mới)
+// src/components/ui/button.tsx — thêm variant "warning"
+const buttonVariants = cva('...', {
+  variants: {
+    variant: {
+      default: '...',
+      warning: 'bg-yellow-500 text-white hover:bg-yellow-600',  // ✅ OK khi thêm vào đây
+    },
+  },
 })
 ```
 
 ```tsx
-// ✅ — Tạo wrapper component riêng
-// src/components/common/PrimaryButton.tsx
+// ✅ — Tạo wrapper trong components/common/ khi thêm behaviour mới (loading, icon...)
+// src/components/common/LoadingButton.tsx
 import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
+import { Loader2 } from 'lucide-react'
 
-interface PrimaryButtonProps extends React.ComponentProps<typeof Button> {
+interface LoadingButtonProps extends React.ComponentProps<typeof Button> {
   loading?: boolean
 }
 
-export function PrimaryButton({ loading, children, className, ...props }: PrimaryButtonProps) {
+export function LoadingButton({ loading, children, disabled, ...props }: LoadingButtonProps) {
   return (
-    <Button
-      className={cn('min-w-24', className)}
-      disabled={loading || props.disabled}
-      {...props}
-    >
-      {loading ? 'Đang lưu...' : children}
+    <Button disabled={loading || disabled} {...props}>
+      {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+      {children}
     </Button>
   )
 }
@@ -173,10 +170,11 @@ export function PrimaryButton({ loading, children, className, ...props }: Primar
 
 ### Thêm component shadcn mới
 ```bash
-# Luôn chạy từ thư mục apps/web
-npx shadcn@latest add dialog
-npx shadcn@latest add dropdown-menu
+# Chạy từ thư mục apps/web (nếu có network)
+npx shadcn add dialog
+npx shadcn add dropdown-menu
 ```
+Nếu không có network: tạo thủ công trong `components/ui/` theo pattern của `button.tsx` — wrap `@radix-ui/react-<name>`, export đúng tên để các consumer import được.
 
 ---
 

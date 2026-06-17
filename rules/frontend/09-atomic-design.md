@@ -18,7 +18,7 @@ Pages       →  app/**/page.tsx         (Next.js pages)
 
 - Không có business logic
 - Không gọi API, không đọc store
-- Là các file do `npx shadcn@latest add` generate — **không sửa trực tiếp**
+- Là các Radix UI wrappers — có thể sửa trực tiếp khi cần thay đổi variant/styling của primitive
 
 ```
 components/ui/
@@ -28,11 +28,12 @@ components/ui/
 ├── badge.tsx
 ├── card.tsx
 ├── dialog.tsx
-├── select.tsx
-└── separator.tsx
+├── dropdown-menu.tsx
+├── skeleton.tsx
+└── switch.tsx
 ```
 
-**Khi cần custom atom:** Tạo file mới trong `components/common/` — không sửa file trong `ui/`.
+**Khi cần custom atom với behaviour mới** (loading state, icon, v.v.): tạo wrapper trong `components/common/`. Khi chỉ cần thêm variant/class: sửa trực tiếp file trong `ui/`.
 
 ```tsx
 // ✅ — Custom atom: extend shadcn Button
