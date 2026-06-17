@@ -25,7 +25,9 @@ Tìm file `po-requests/sprint-*/US-{id}*.md`. Nếu không có file, dùng mô t
 
 ## Step 2 — Load rules liên quan
 
-Trước khi viết plan, đọc **tất cả** rules embed (chỉ có 4, đọc hết):
+Trước khi viết plan, đọc **bắt buộc**:
+1. `apps/embed/CLAUDE.md` — stack, bundle constraints, quy tắc quan trọng của layer này
+2. Tất cả rules embed (chỉ có 4, đọc hết):
 
 | Rule | Nội dung |
 |---|---|

@@ -25,7 +25,9 @@ Tìm file `po-requests/sprint-*/US-{id}*.md`. Nếu không có file, dùng mô t
 
 ## Step 2 — Load rules liên quan
 
-Trước khi viết plan, đọc các rule sau **nếu chưa đọc trong session này**:
+Trước khi viết plan, đọc **bắt buộc**:
+1. `apps/api/CLAUDE.md` — stack, cấu trúc module, quy tắc quan trọng của layer này
+2. Các rule cụ thể bên dưới **nếu chưa đọc trong session này**:
 
 | Rule | Đọc khi |
 |---|---|
