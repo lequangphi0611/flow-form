@@ -125,11 +125,24 @@ story_points: 2
 | US-004d | web | 1 | US-004a | ✅ song song với US-004b, US-004c |
 
 ### Execution waves
-Wave 1 (parallel): US-004a
-Wave 2 (parallel): US-004b · US-004c · US-004d
+Wave 1: US-004a
+Wave 2: US-004b · US-004c · US-004d
 
-Tổng: 8 SP → wave 1 unblocks wave 2. Wave 2 có thể chạy 3 agent song song.
+Tổng: 8 SP → 2 waves. Wave 2 có thể chạy 3 agent song song.
+
+### Lệnh chạy tiếp theo
+
+Wave 1 — chạy ngay:
+`Implement US-004a`
+
+Wave 2 — chạy sau khi Wave 1 xong (song song):
+`Implement US-004b, US-004c, US-004d song song`
 ```
+
+**Quy tắc gen lệnh:**
+- Wave có 1 task → `Implement US-{id}{letter}` (không có "song song")
+- Wave có 2+ task → `Implement US-{a}, US-{b}, US-{c} song song`
+- Label: "chạy ngay" cho wave đầu, "chạy sau khi Wave N xong" cho các wave sau
 
 ---
 
