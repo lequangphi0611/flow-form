@@ -7,6 +7,9 @@ async function handleResponse<T>(res: Response): Promise<T> {
     const message = await res.text().catch(() => res.statusText)
     throw new Error(message || `HTTP ${res.status}`)
   }
+  if (res.status === 204 || res.headers.get('content-length') === '0') {
+    return undefined as T
+  }
   return res.json() as Promise<T>
 }
 

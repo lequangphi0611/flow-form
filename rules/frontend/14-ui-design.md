@@ -132,6 +132,59 @@ border-gray-300   ← Input border
 border-blue-500   ← Selected / focused border
 ```
 
+### Button hover — dùng `brightness` filter cho destructive, không dùng opacity shorthand
+
+`hover:bg-destructive/90` tạo ra màu `destructive` pha với màu nền trắng — kết quả là button **sáng hơn** khi hover, ngược với UX expectation (user expect tối hơn = pressed/dangerous).
+
+```tsx
+// ✅ — Dùng CSS filter để tối 10% (không phụ thuộc màu nền)
+destructive: "bg-destructive text-destructive-foreground hover:brightness-90 transition-[filter,colors]"
+
+// ❌ — /90 trên nền trắng sẽ pha loãng màu → sáng hơn, không phải tối hơn
+destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+```
+
+Khi dùng `hover:brightness-*`, phải thêm `transition-[filter,colors]` vào class list (không phải `transition-colors` đơn thuần — cái đó không animate `filter`).
+
+### Button cursor — luôn explicit `cursor-pointer`
+
+Browser default cho `<button>` là `cursor: default`, không phải `cursor: pointer`. shadcn không set cursor mặc định. Phải khai báo explicit trong base class của `buttonVariants`.
+
+```tsx
+// ✅ — Base class của buttonVariants
+const buttonVariants = cva(
+  "inline-flex cursor-pointer items-center ... disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50",
+  { ... }
+)
+```
+
+- `cursor-pointer` — tất cả button ở trạng thái bình thường
+- `disabled:cursor-not-allowed` — giữ visual cue ngay cả khi `pointer-events-none` đã tắt click; browser vẫn render cursor từ style kể cả khi pointer-events bị disable
+
+### CSS variable color token — phải khai báo ở hai chỗ trong globals.css
+
+Tailwind v4 dùng `@theme inline` để map CSS variable sang utility class. Nếu chỉ khai báo giá trị trong `:root` mà không map vào `@theme inline`, class `text-*` / `bg-*` tương ứng sẽ **không được generate** — Tailwind fallback về `--foreground` hoặc transparent.
+
+```css
+/* globals.css */
+
+/* Bước 1: khai báo giá trị trong :root */
+:root {
+  --destructive-foreground: oklch(0.985 0 0);
+  /* ... các token khác */
+}
+
+/* Bước 2: map vào @theme inline để Tailwind generate utility class */
+@theme inline {
+  --color-destructive-foreground: var(--destructive-foreground);
+  /* ... */
+}
+```
+
+Thiếu bước 2: `text-destructive-foreground` compile thành `color: var(--color-destructive-foreground)` nhưng biến `--color-destructive-foreground` không tồn tại → browser dùng `currentColor` hoặc inherited color (thường là màu tối → chữ tối trên nền đỏ, không đọc được).
+
+Áp dụng cho mọi color token tự thêm ngoài bộ mặc định shadcn CLI cung cấp.
+
 ---
 
 ## 4. Sizing — Kích thước component

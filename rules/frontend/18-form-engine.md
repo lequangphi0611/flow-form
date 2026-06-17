@@ -246,7 +246,7 @@ export function WizardForm({ form }: { form: FormSchema }) {
 
 ## 4. File upload trong Form Engine
 
-End-user upload file → POST `multipart/form-data` **trực tiếp đến NestJS** (`/api/storage/upload`). NestJS proxy file lên Firebase Storage và trả về `publicUrl`. Không cần Next.js Route Handler trung gian.
+End-user upload file → POST `multipart/form-data` **trực tiếp đến NestJS** (`/api/storage/upload`). NestJS proxy file lên Supabase Storage và trả về `publicUrl`. Không cần Next.js Route Handler trung gian.
 
 ```tsx
 // ✅ — FileUploadField trong Form Engine

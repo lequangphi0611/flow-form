@@ -1,32 +1,26 @@
-import { Module } from '@nestjs/common'
+import { Module, Provider } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
-import { initializeApp, getApps, cert } from 'firebase-admin/app'
-import type { App } from 'firebase-admin/app'
+import { createClient } from '@supabase/supabase-js'
+import ws from 'ws'
 import type { EnvConfig } from '../../config/env.schema'
 import { StorageService } from './storage.service'
 import { StorageController } from './storage.controller'
+import { SUPABASE_CLIENT } from './storage.constants'
 
-export const FIREBASE_APP = 'FIREBASE_APP'
-
-const firebaseProvider = {
-  provide: FIREBASE_APP,
+const supabaseProvider: Provider = {
+  provide: SUPABASE_CLIENT,
   inject: [ConfigService],
-  useFactory: (config: ConfigService<EnvConfig, true>): App => {
-    if (getApps().length > 0) return getApps()[0]
-    return initializeApp({
-      credential: cert({
-        projectId: config.getOrThrow('FIREBASE_PROJECT_ID'),
-        clientEmail: config.getOrThrow('FIREBASE_CLIENT_EMAIL'),
-        privateKey: config.getOrThrow('FIREBASE_PRIVATE_KEY').replace(/\\n/g, '\n'),
-      }),
-      storageBucket: config.getOrThrow('FIREBASE_STORAGE_BUCKET'),
-    })
-  },
+  useFactory: (config: ConfigService<EnvConfig, true>) =>
+    createClient(
+      config.getOrThrow('SUPABASE_URL'),
+      config.getOrThrow('SUPABASE_SERVICE_ROLE_KEY'),
+      { realtime: { transport: ws as any } },
+    ),
 }
 
 @Module({
   controllers: [StorageController],
-  providers: [firebaseProvider, StorageService],
+  providers: [supabaseProvider, StorageService],
   exports: [StorageService],
 })
 export class StorageModule {}

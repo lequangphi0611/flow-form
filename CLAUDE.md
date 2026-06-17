@@ -40,7 +40,7 @@ Nếu làm việc trong một app hoặc package cụ thể, đọc thêm CLAUDE
 | ORM | Prisma | Type-safe, DX tốt, Prisma Studio debug data |
 | Auth | Better Auth | Framework-agnostic, database sessions (không cần Redis) |
 | Background Jobs | pg-boss | Job queue trên PostgreSQL sẵn có, không cần Redis |
-| File Storage | Firebase Storage (Spark) | 5 GB free, không cần credit card, proxy upload qua NestJS |
+| File Storage | Supabase Storage (Free) | 1 GB free, 2 GB/tháng bandwidth, proxy upload qua NestJS |
 
 ### Infrastructure (Free tier)
 
@@ -49,7 +49,7 @@ Nếu làm việc trong một app hoặc package cụ thể, đọc thêm CLAUDE
 | Frontend hosting | Vercel Hobby | 100 GB bandwidth/tháng |
 | Backend hosting | Render Free | 750 giờ/tháng, cold start ~30–50s sau idle |
 | Database | Neon | 0.5 GB storage, auto-pause sau 5 phút idle |
-| File storage | Firebase Storage (Spark) | 5 GB storage, 1 GB/ngày download, không cần credit card |
+| File storage | Supabase Storage (Free) | 1 GB storage, 2 GB/tháng bandwidth |
 | Keep-alive | UptimeRobot | Ping Render mỗi 10 phút để tránh cold start |
 
 ### Monorepo

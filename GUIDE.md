@@ -30,42 +30,23 @@ npm -v
 
 ---
 
-## 3. Firebase Storage — File storage miễn phí
+## 3. Supabase Storage — File storage miễn phí
 
 > Bỏ qua bước này nếu chưa cần tính năng upload file. App vẫn chạy được.
 
-> **Spark plan (free)** — 5 GB storage, 1 GB/ngày download, không cần credit card.
+> **Free tier** — 1 GB storage, 2 GB/tháng bandwidth, không cần credit card.
 
-1. Vào [console.firebase.google.com](https://console.firebase.google.com) → **Add project** → đặt tên `flowform`
-2. Trong project, vào **Build → Storage → Get started**
-   - Chọn **Start in production mode** (bước tiếp theo sẽ cấu hình rules)
-   - Chọn region gần nhất (ví dụ: `asia-southeast1`)
-3. Cấu hình Storage rules — vào **Rules** tab và dán:
-   ```
-   rules_version = '2';
-   service firebase.storage {
-     match /b/{bucket}/o {
-       match /{allPaths=**} {
-         allow read: if true;   // public read (makePublic() đã set qua API)
-         allow write: if false; // chỉ NestJS mới được ghi qua Admin SDK
-       }
-     }
-   }
-   ```
-   → **Publish**
-4. Vào **Project settings (⚙️) → Service accounts → Generate new private key**
-   → Download file JSON, mở ra lấy các giá trị sau:
-   - `project_id` → `FIREBASE_PROJECT_ID`
-   - `client_email` → `FIREBASE_CLIENT_EMAIL`
-   - `private_key` → `FIREBASE_PRIVATE_KEY` *(xem lưu ý bên dưới)*
-   - Tên bucket (dạng `your-project.appspot.com`) → `FIREBASE_STORAGE_BUCKET`
+1. Tạo tài khoản tại [supabase.com](https://supabase.com) → **New project** → đặt tên `flowform`
+   - Chọn region gần nhất (Singapore)
+   - Đặt Database Password (lưu lại, dùng sau)
+2. Đợi project khởi tạo (~2 phút), sau đó vào **Project Settings → API** và lưu lại:
+   - **Project URL** → `SUPABASE_URL`
+   - **`service_role`** key (mục *Project API Keys*) → `SUPABASE_SERVICE_ROLE_KEY`
+3. Vào **Storage → New bucket**:
+   - Đặt tên bucket (ví dụ: `uploads`)
+   - Bật **Public bucket** → **Save**
 
-> **Lưu ý `FIREBASE_PRIVATE_KEY`:** Trong file JSON, `private_key` chứa newline thật (`\n`).
-> Khi paste vào `.env`, phải để **trên 1 dòng** trong dấu nháy kép — dotenv tự xử lý `\n` escape:
-> ```
-> FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIIE...\n-----END PRIVATE KEY-----\n"
-> ```
-> Không copy-paste nguyên block PEM nhiều dòng — app sẽ crash khi khởi động.
+> **Lưu ý:** Bucket phải là **Public** để `getPublicUrl()` trả về URL trực tiếp mà không cần signed URL.
 
 ---
 
@@ -92,10 +73,9 @@ BETTER_AUTH_URL="http://localhost:3001"
 FRONTEND_URL="http://localhost:3000"
 
 # Từ bước 3 (để trống nếu bỏ qua bước 3 — app vẫn chạy, chỉ mất tính năng upload)
-FIREBASE_PROJECT_ID=""
-FIREBASE_CLIENT_EMAIL=""
-FIREBASE_PRIVATE_KEY=""
-FIREBASE_STORAGE_BUCKET=""
+SUPABASE_URL=""
+SUPABASE_SERVICE_ROLE_KEY=""
+SUPABASE_STORAGE_BUCKET="uploads"
 ```
 
 > **Tạo BETTER_AUTH_SECRET trên Windows (không có openssl):**
@@ -228,7 +208,7 @@ cd apps/embed && npm run build
 | `apps/web` | Vercel | Connect GitHub repo, auto-detect Next.js |
 | `apps/api` | Render | Web Service, Node runtime, port 3001 |
 | Database | Neon | Dùng production branch thay vì main |
-| File storage | Firebase Storage (Spark) | Đã setup ở bước 3 — dùng credentials từ service account JSON |
+| File storage | Supabase Storage (Free) | Đã setup ở bước 3 — dùng SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY |
 | Keep-alive | UptimeRobot | Monitor URL `https://your-api.render.com/api`, interval 5 phút |
 
 > **Biến môi trường khi deploy:** Điền vào Vercel Dashboard và Render Dashboard thay vì file `.env`.

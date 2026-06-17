@@ -1,11 +1,16 @@
-import { Inject, Injectable, NotFoundException, UnsupportedMediaTypeException } from '@nestjs/common'
+import {
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+  UnsupportedMediaTypeException,
+} from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
-import { getStorage } from 'firebase-admin/storage'
-import type { App } from 'firebase-admin/app'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { randomUUID } from 'crypto'
 import type { EnvConfig } from '../../config/env.schema'
 import { PrismaService } from '../../prisma/prisma.service'
-import { FIREBASE_APP } from './storage.module'
+import { SUPABASE_CLIENT } from './storage.constants'
 
 const ALLOWED_MIME_TYPES = new Set([
   'image/jpeg',
@@ -20,7 +25,7 @@ const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024
 @Injectable()
 export class StorageService {
   constructor(
-    @Inject(FIREBASE_APP) private readonly firebaseApp: App,
+    @Inject(SUPABASE_CLIENT) private readonly supabase: SupabaseClient,
     private readonly config: ConfigService<EnvConfig, true>,
     private readonly prisma: PrismaService,
   ) {}
@@ -58,14 +63,24 @@ export class StorageService {
 
     const sanitizedName = originalName.replace(/[^a-zA-Z0-9._-]/g, '_')
     const fileKey = `forms/${formId}/attachments/${randomUUID()}-${sanitizedName}`
+    const bucket = this.config.getOrThrow('SUPABASE_STORAGE_BUCKET')
 
-    const bucket = getStorage(this.firebaseApp).bucket()
-    const file = bucket.file(fileKey)
+    const { error } = await this.supabase.storage
+      .from(bucket)
+      .upload(fileKey, buffer, { contentType: mimeType, upsert: false })
 
-    await file.save(buffer, { contentType: mimeType, resumable: false })
-    await file.makePublic()
+    if (error) {
+      throw new InternalServerErrorException({
+        type: 'https://flowform.dev/errors/storage-upload-failed',
+        title: 'Storage Upload Failed',
+        status: 500,
+        detail: error.message,
+      })
+    }
 
-    const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileKey}`
+    const {
+      data: { publicUrl },
+    } = this.supabase.storage.from(bucket).getPublicUrl(fileKey)
 
     await this.prisma.fileAttachment.create({
       data: {
@@ -83,7 +98,7 @@ export class StorageService {
   }
 
   async deleteFile(fileKey: string) {
-    const bucket = getStorage(this.firebaseApp).bucket()
-    await bucket.file(fileKey).delete()
+    const bucket = this.config.getOrThrow('SUPABASE_STORAGE_BUCKET')
+    await this.supabase.storage.from(bucket).remove([fileKey])
   }
 }

@@ -1,11 +1,14 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalEnv": ["NODE_ENV"],
+  "globalPassThroughEnv": ["APPDATA", "LOCALAPPDATA", "TEMP", "TMP", "USERPROFILE", "SystemRoot", "SystemDrive", "ComSpec", "PATHEXT"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"]
     },
     "dev": {
+      "dependsOn": ["^build"],
       "cache": false,
       "persistent": true
     },

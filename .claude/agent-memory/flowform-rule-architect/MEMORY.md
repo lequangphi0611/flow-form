@@ -1,3 +1,4 @@
+- [Atomic Design Trigger Fix](feedback-atomic-design-trigger.md) — Rule 09 không trigger khi tạo component; fix: dùng ngôn ngữ hành động trong trigger + checklist inline
 - [API Architecture Decisions](project-api-architecture-decisions.md) — CQRS light, Zod validation, RFC 7807 errors, R2 defaults (10MB/15min/confirm-flow), TS exceptions for JSONB/pg-boss
 - [No-Redis Constraint](project-flowform-no-redis-constraint.md) — Hard constraint: no Redis anywhere; pg-boss for jobs, DB sessions, in-memory throttler
 - [Embed Architecture Decisions](project-embed-decisions.md) — Preact, 30KB cap, CSS isolation (shadow DOM/flowform- prefix), public API backward compat rules

@@ -31,15 +31,18 @@ Dùng array có cấu trúc phân cấp. Key phải **nhất quán** — mọi n
 ```ts
 // src/lib/query-keys.ts  ✅
 export const formKeys = {
-  all: ['forms'] as const,
+  root: ['forms'] as const,                              // prefix — dùng để invalidate tất cả form queries
+  all: (userId: string) => ['forms', userId] as const,  // danh sách của 1 user
   detail: (id: string) => ['forms', id] as const,
   analytics: (id: string) => ['forms', id, 'analytics'] as const,
   responses: (id: string) => ['forms', id, 'responses'] as const,
 }
 
 // Dùng:
+useQuery({ queryKey: formKeys.all(userId), ... })
 useQuery({ queryKey: formKeys.detail(id), ... })
-queryClient.invalidateQueries({ queryKey: formKeys.detail(id) })
+queryClient.invalidateQueries({ queryKey: formKeys.root })          // invalidate tất cả
+queryClient.invalidateQueries({ queryKey: formKeys.detail(id) })    // invalidate 1 form
 ```
 
 ---
@@ -140,7 +143,7 @@ export function useDeleteForm(options?: { onSuccess?: () => void }) {
   return useMutation({
     mutationFn: (id: string) => formsApi.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: formKeys.all })
+      queryClient.invalidateQueries({ queryKey: formKeys.root })
       options?.onSuccess?.()
     },
   })
@@ -212,7 +215,84 @@ function SettingsPanel({ form }: { form: FormSchema }) {
 
 ---
 
-## 5. Optimistic update — dùng cho Builder auto-save
+## 5. Query key cho user-scoped data — bắt buộc include userId
+
+**Bối cảnh phát hiện:** `queryKey: ['forms']` không gắn với user cụ thể. Nếu user A và user B dùng cùng browser (đăng nhập lần lượt), user B thấy cache data của user A trong suốt `staleTime` (mặc định 60 giây).
+
+Mọi query trả về dữ liệu thuộc về 1 user cụ thể **phải include `userId`** trong query key. Lấy `userId` từ `useSession()`.
+
+```ts
+// src/lib/query-keys.ts  ✅ — all() nhận userId
+export const formKeys = {
+  all: (userId: string) => ['forms', userId] as const,
+  detail: (id: string) => ['forms', id] as const,
+  analytics: (id: string) => ['forms', id, 'analytics'] as const,
+  responses: (id: string) => ['forms', id, 'responses'] as const,
+}
+```
+
+```ts
+// src/hooks/forms/useFormList.ts  ✅
+import { useQuery } from '@tanstack/react-query'
+import { formsApi } from '@/lib/api/forms'
+import { formKeys } from '@/lib/query-keys'
+import { useCurrentUser } from '@/hooks/auth/useCurrentUser'
+
+export function useFormList() {
+  const { data } = useCurrentUser()         // TanStack Query wrapper — đã cache, không refetch mỗi render
+  const userId = data?.user?.id ?? ''
+
+  return useQuery({
+    queryKey: formKeys.all(userId),
+    queryFn: formsApi.list,
+    enabled: !!userId,   // không fetch khi chưa có session
+  })
+}
+```
+
+```ts
+// src/lib/query-keys.ts  ❌ — thiếu root key → phải dùng magic string để invalidate
+export const formKeys = {
+  all: ['forms'] as const,  // ❌ không scope theo user + không có root key riêng
+}
+
+// src/hooks/forms/useFormList.ts  ❌
+export function useFormList() {
+  return useQuery({
+    queryKey: formKeys.all,    // ❌ không scope theo user
+    queryFn: formsApi.list,
+    // ❌ thiếu enabled: !!userId → fetch ngay cả khi chưa đăng nhập
+  })
+}
+
+// ❌ — raw string thay vì dùng formKeys
+queryClient.invalidateQueries({ queryKey: ['forms'] })
+```
+
+**Invalidation dùng `formKeys.root` — prefix match tất cả variants:**
+
+```ts
+// ✅ — Invalidate tất cả form queries (mọi user) — dùng trong mutation không biết userId
+queryClient.invalidateQueries({ queryKey: formKeys.root })
+
+// ✅ — Invalidate chỉ list của 1 user cụ thể
+queryClient.invalidateQueries({ queryKey: formKeys.all(userId) })
+```
+
+TanStack Query dùng prefix matching: `formKeys.root` (`['forms']`) match `['forms', userId]`, `['forms', id]`, `['forms', id, 'analytics']`... Invalidation bằng prefix là đúng và đủ — không cần truyền userId vào invalidation nếu muốn clear tất cả.
+
+**Phân loại query key:**
+
+| Loại data | Query key pattern | Ghi chú |
+|---|---|---|
+| Danh sách thuộc về user | `['forms', userId]` | userId bắt buộc |
+| Chi tiết 1 resource | `['forms', formId]` | formId đã unique — không cần userId |
+| Sub-resource | `['forms', formId, 'responses']` | formId đã scope đủ |
+| Data không thuộc user | `['public-forms', formId]` | Không cần userId |
+
+---
+
+## 6. Optimistic update — dùng cho Builder auto-save
 
 Auto-save trong Builder không cần chờ server. Dùng optimistic để UX mượt.
 

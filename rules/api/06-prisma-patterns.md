@@ -205,6 +205,44 @@ async searchForms(ownerId: string, keyword: string) {
 }
 ```
 
+## Defensive guard trước filter critical — tránh Prisma bỏ qua `undefined`
+
+**Bối cảnh phát hiện:** Nếu `ownerId` là `undefined` (do Guard không chạy hoặc session không set), Prisma **bỏ qua** điều kiện `where: { ownerId: undefined }` và trả về toàn bộ records — không báo lỗi.
+
+Mọi repository method dùng filter critical (ownerId, userId, formId...) phải có guard trả về empty/null ngay đầu hàm nếu giá trị đó falsy:
+
+```ts
+// ✅ — Early return nếu ownerId undefined/empty
+async findByOwner(ownerId: string, pagination: PaginationDto) {
+  if (!ownerId) return []  // Prisma bỏ qua undefined filter → trả ALL records nếu không guard
+  return this.prisma.form.findMany({
+    where: { ownerId },
+    // ...
+  })
+}
+
+// ✅ — Tương tự với userId trong responses
+async findByFormAndOwner(formId: string, ownerId: string) {
+  if (!formId || !ownerId) return []
+  return this.prisma.response.findMany({
+    where: { formId, form: { ownerId } },
+  })
+}
+```
+
+```ts
+// ❌ — Không guard → Prisma ignore undefined → leak toàn bộ data
+async findByOwner(ownerId: string, pagination: PaginationDto) {
+  return this.prisma.form.findMany({
+    where: { ownerId },  // Nếu ownerId = undefined → Prisma bỏ where → SELECT ALL
+  })
+}
+```
+
+**Lưu ý:** Guard này là defense-in-depth — `AuthGuard + FormOwnerGuard` đã bắt lỗi trước. Nhưng repository không nên tin tuyệt đối vào layer trên. Kiểm tra `!ownerId` chi phí O(1) và ngăn data leak nếu Guard bị bypass hoặc mis-configured.
+
+---
+
 ## JSONB default fallback — `??` không hoạt động với Prisma Json default
 
 **Prisma schema:**
@@ -238,6 +276,14 @@ Trước khi merge PR có `hydrate()` method:
 - [ ] Fallback về DEFAULT value khi parse fail — không throw trong hydrate
 - [ ] List queries dùng `select` — **không dùng** `include` trừ khi cần relation objects
 - [ ] `steps` không được load trong list query nếu không cần cho UI list card
+
+## PR Checklist — Repository filter methods
+
+Trước khi merge PR có repository method dùng filter critical:
+
+- [ ] Method có `if (!ownerId) return []` (hoặc `return null`) trước khi gọi Prisma
+- [ ] Mọi filter critical (ownerId, userId, formId) đều được guard — không tin rằng caller luôn truyền đúng
+- [ ] Không dùng `!` non-null assertion trên giá trị đến từ request params
 
 ---
 

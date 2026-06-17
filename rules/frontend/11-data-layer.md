@@ -154,7 +154,12 @@ async function handleResponse<T>(res: Response): Promise<T> {
     const message = await res.text().catch(() => res.statusText)
     throw new Error(message || `HTTP ${res.status}`)
   }
-  return res.json()
+  // Guard no-body responses (204 No Content, hoặc Content-Length: 0)
+  // PHẢI check TRƯỚC res.json() — gọi json() trên body rỗng sẽ throw SyntaxError
+  if (res.status === 204 || res.headers.get('content-length') === '0') {
+    return undefined as T
+  }
+  return res.json() as Promise<T>
 }
 
 export const formsApi = {
@@ -195,6 +200,47 @@ export const formsApi = {
     }).then(handleResponse<void>),
 }
 ```
+
+### Pattern: No-body response (204 / void)
+
+Một số endpoint không trả về body (DELETE thường là 204 No Content; một số PUT/PATCH cũng vậy). Quy tắc:
+
+1. **`handleResponse` là hàm duy nhất xử lý tất cả response** — không tạo handler riêng cho void.
+2. **Guard phải đứng trước `res.json()`** — `res.json()` trên body rỗng ném `SyntaxError` runtime, không phải lỗi TypeScript.
+3. **Khai báo `Promise<void>` tại caller** — người gọi không cần unwrap hay kiểm tra giá trị trả về.
+
+```ts
+// ✅ — DELETE khai báo Promise<void>, handleResponse trả undefined as T
+delete: (id: string): Promise<void> =>
+  fetch(`${API}/api/forms/${id}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  }).then(handleResponse<void>),
+
+// ✅ — PUT/PATCH trả no-body cũng dùng Promise<void>
+archive: (id: string): Promise<void> =>
+  fetch(`${API}/api/forms/${id}/archive`, {
+    method: 'PATCH',
+    credentials: 'include',
+  }).then(handleResponse<void>),
+```
+
+```ts
+// ❌ — Tạo handler riêng cho void response
+async function handleVoidResponse(res: Response): Promise<void> { // ❌ — không cần, handleResponse đã cover
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+}
+
+// ❌ — Gọi res.json() không có guard, nổ SyntaxError với 204
+async function handleResponse<T>(res: Response): Promise<T> {
+  if (!res.ok) { ... }
+  return res.json()  // ❌ — DELETE/204 sẽ throw "Unexpected end of JSON input"
+}
+```
+
+> **Nguyên tắc nhất quán**: `handleResponse<void>` và `handleResponse<FormSchema>` đều đi qua cùng một hàm. TypeScript enforce return type tại caller, runtime guard enforce tại `handleResponse`.
+
+---
 
 ### Dùng trong TanStack Query
 

@@ -326,6 +326,83 @@ Guard của module **không** inject PrismaService — phải inject Repository 
 
 ---
 
+## 11. AuthGuard + FormOwnerGuard bắt buộc cho mọi endpoint trả về user-scoped data
+
+**Bối cảnh phát hiện:** `GET /api/forms/:formId/responses` chỉ có `@UseGuards(AuthGuard)` — bất kỳ user đã đăng nhập đều xem được responses của người khác nếu biết formId.
+
+Mọi endpoint trả về dữ liệu thuộc về một user cụ thể (responses, analytics, settings, exports...) **phải dùng cả hai guard**, không chỉ `AuthGuard`.
+
+```ts
+// ✅ — Responses endpoint: check cả session + ownership
+@Get()
+@UseGuards(AuthGuard, FormOwnerGuard)
+findAll(@Param('formId') formId: string) {
+  return this.responsesService.findAll(formId)
+}
+
+// ✅ — Analytics endpoint: tương tự
+@Get('analytics')
+@UseGuards(AuthGuard, FormOwnerGuard)
+getAnalytics(@Param('formId') formId: string) {
+  return this.analyticsService.getByForm(formId)
+}
+```
+
+```ts
+// ❌ — Chỉ check đăng nhập, không check ownership → IDOR vulnerability
+@Get()
+@UseGuards(AuthGuard)
+findAll(@Param('formId') formId: string) { ... }
+// User B có thể xem responses của User A nếu biết formId
+```
+
+**Nguyên tắc phân loại:**
+
+| Endpoint type | Guard yêu cầu |
+|---|---|
+| Public (không cần auth) | Không guard, nhưng phải filter `status: 'published'` |
+| Đã đăng nhập, không liên quan form cụ thể | `AuthGuard` only |
+| Trả về data của 1 form cụ thể | `AuthGuard + FormOwnerGuard` — bắt buộc |
+
+---
+
+## 12. `FormOwnerGuard` phải đọc `params['id'] ?? params['formId']`
+
+`FormOwnerGuard` hiện đọc `request.params['id']`. Tuy nhiên, các module khác (responses, analytics) nest route dưới `forms/:formId` — param name là `formId`, không phải `id`.
+
+Guard phải hỗ trợ cả hai để hoạt động nhất quán cross-module:
+
+```ts
+// ✅ — src/modules/forms/guards/form-owner.guard.ts
+async canActivate(context: ExecutionContext): Promise<boolean> {
+  const request = context.switchToHttp().getRequest<Request>()
+  // Hỗ trợ cả :id (forms module) và :formId (responses, analytics modules)
+  const formId = (request.params['id'] ?? request.params['formId']) as string
+  const userId = request.user?.id
+
+  const form = await this.formsRepository.findOwnerById(formId)
+  // ...
+}
+```
+
+```ts
+// ❌ — Chỉ đọc params['id'] → undefined khi route dùng :formId
+async canActivate(context: ExecutionContext): Promise<boolean> {
+  const formId = request.params['id']  // ❌ undefined với /forms/:formId/responses
+  // findOwnerById(undefined) → trả null → throw NotFoundException sai
+}
+```
+
+**Route param mapping:**
+
+| Module | Route | Param cần đọc |
+|---|---|---|
+| `FormsController` | `/forms/:id` | `params['id']` |
+| `ResponsesController` | `/forms/:formId/responses` | `params['formId']` |
+| `AnalyticsController` | `/forms/:formId/analytics` | `params['formId']` |
+
+---
+
 ## 9. Không tạo NestJS controller cho Better Auth routes
 
 ```ts
@@ -372,6 +449,8 @@ Trước khi merge bất kỳ PR nào có Guard mới:
 - [ ] `AuthGuard` đứng trước `FormOwnerGuard` trong `@UseGuards(...)`
 - [ ] Service method sau Guard **không** re-query để kiểm tra existence
 - [ ] Public endpoint có status filter (`status: 'published'`) — không trả draft
+- [ ] Mọi endpoint trả về user-scoped data (responses, analytics, settings) dùng **cả hai** `AuthGuard + FormOwnerGuard`, không chỉ `AuthGuard`
+- [ ] `FormOwnerGuard` đọc `params['id'] ?? params['formId']` — không hardcode một tên param
 
 ## Exceptions
 
