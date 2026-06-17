@@ -102,6 +102,7 @@ cd apps/api && npm run build
 - [`07 — pg-boss Job Patterns`](../../rules/api/07-pgboss-job-patterns.md) — Async jobs qua pg-boss, job name constants, register trong onModuleInit, payload validation, idempotent handlers
 - [`08 — Storage & R2 Upload Patterns`](../../rules/api/08-storage-r2-patterns.md) — Presigned URL flow 3 bước, 10MB limit, 15min expiry, MIME allowlist, DB record chỉ tạo sau confirm
 - [`09 — Config & Environment Variable Patterns`](../../rules/api/09-config-env-patterns.md) — ConfigService thay vì process.env, Zod env schema validate lúc startup, getOrThrow cho required vars
+- [`Shared 03 — Clean Code`](../../rules/shared/03-clean-code.md) — Function design, naming (is/has/SCREAMING_SNAKE), no magic values, no dead code/any
 
 ---
 

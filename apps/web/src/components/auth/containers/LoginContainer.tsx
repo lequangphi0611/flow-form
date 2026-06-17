@@ -14,15 +14,18 @@ export function LoginContainer() {
     setIsPending(true)
     setError(null)
 
-    const { error: signInError } = await signIn.email({ email, password })
-
-    if (signInError) {
-      setError('Email hoặc mật khẩu không đúng')
+    try {
+      const { error: signInError } = await signIn.email({ email, password })
+      if (signInError) {
+        setError('Email hoặc mật khẩu không đúng')
+        return
+      }
+      router.push('/forms')
+    } catch {
+      setError('Đã có lỗi xảy ra, vui lòng thử lại')
+    } finally {
       setIsPending(false)
-      return
     }
-
-    router.push('/forms')
   }
 
   return <LoginForm isPending={isPending} error={error} onSubmit={handleSubmit} />

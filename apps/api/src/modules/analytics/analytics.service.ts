@@ -1,23 +1,23 @@
 import { Injectable } from '@nestjs/common'
 import { PrismaService } from '../../prisma/prisma.service'
+import type { TrackEventDto } from './analytics.schema'
 
 @Injectable()
 export class AnalyticsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  track(formId: string, data: unknown) {
+  track(formId: string, dto: TrackEventDto) {
     return this.prisma.formAnalyticsEvent.create({
       data: {
         formId,
-        sessionId: (data as any).sessionId,
-        stepIndex: (data as any).stepIndex,
-        eventType: (data as any).eventType,
+        sessionId: dto.sessionId,
+        stepIndex: dto.stepIndex,
+        eventType: dto.eventType,
       },
     })
   }
 
   async getFunnel(formId: string) {
-    // Group by stepIndex and eventType to calculate drop-off
     const events = await this.prisma.formAnalyticsEvent.groupBy({
       by: ['stepIndex', 'eventType'],
       where: { formId },

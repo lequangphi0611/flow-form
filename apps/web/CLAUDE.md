@@ -34,6 +34,7 @@
 | [`../../rules/frontend/18-form-engine.md`](../../rules/frontend/18-form-engine.md) | Conditional fields, dynamic Zod schema, useFormTracking, file upload cho end-user |
 | [`../../rules/frontend/19-url-state.md`](../../rules/frontend/19-url-state.md) | Search params cho filter/sort/pagination — không dùng useState hay Zustand |
 | [`../../rules/frontend/20-layout-decisions.md`](../../rules/frontend/20-layout-decisions.md) | **Tạo/sửa `layout.tsx`**, tạo `page.tsx` mới, thêm route group, hoặc task đề cập "header", "sidebar", "layout", "trang mới". Tra cứu decision log trước khi code. **Bắt buộc ghi lại quyết định mới** sau khi implement. |
+| [`../../rules/shared/03-clean-code.md`](../../rules/shared/03-clean-code.md) | **Mọi PR** — function design, naming (is/has/SCREAMING_SNAKE/plural), no magic values, no dead code/any/console.log |
 
 ---
 

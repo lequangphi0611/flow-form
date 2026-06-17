@@ -64,3 +64,28 @@ export const createFormSchema = z.object({
 })
 
 export type CreateFormInput = z.infer<typeof createFormSchema>
+
+// Lightweight schema cho luồng "tạo nháp nhanh" từ dashboard (chỉ cần title)
+export const createFormDraftSchema = z.object({
+  title: z.string().min(1, 'Tiêu đề không được để trống').max(100),
+})
+
+export type CreateFormDraftDto = z.infer<typeof createFormDraftSchema>
+
+// Schema cho JSONB column `schema` trong bảng Form — dùng trong repository.hydrate()
+export const formBodySchema = z.object({
+  steps: z.array(stepSchemaValidator).default([]),
+})
+
+export type FormBody = z.infer<typeof formBodySchema>
+
+// Schema cho PATCH /api/forms/:id — builder auto-save (partial update)
+export const updateFormSchema = z.object({
+  title:       z.string().min(1, 'Tiêu đề không được để trống').max(100).optional(),
+  description: z.string().max(500).nullable().optional(),
+  schema:      formBodySchema.optional(),
+  settings:    formSettingsSchema.optional(),
+  theme:       themeConfigSchema.optional(),
+})
+
+export type UpdateFormDto = z.infer<typeof updateFormSchema>

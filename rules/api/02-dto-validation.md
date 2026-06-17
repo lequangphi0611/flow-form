@@ -274,6 +274,32 @@ async getFormsByOwner(ownerId: string, page: string, limit: string) {
 
 ---
 
+## PR Checklist — ZodValidationPipe
+
+Trước khi merge bất kỳ PR nào có `ZodValidationPipe`, kiểm tra:
+
+- [ ] Class có decorator `@Injectable()`
+- [ ] Error body dùng `result.error.flatten().fieldErrors` — **không dùng** `result.error.issues`
+- [ ] `detail` là static string `'Request body failed schema validation'` — **không** join từ issues
+- [ ] Import từ `'@nestjs/common'` có đủ `Injectable`
+
+```ts
+// ❌ — 3 lỗi phổ biến trong cùng 1 file
+export class ZodValidationPipe<T> implements PipeTransform {    // thiếu @Injectable()
+  transform(value: unknown): T {
+    const result = this.schema.safeParse(value)
+    if (!result.success) {
+      throw new BadRequestException({
+        detail: result.error.issues.map(...).join('; '),         // ❌ không phải static string
+        errors: result.error.issues,                             // ❌ raw internal array
+      })
+    }
+  }
+}
+```
+
+---
+
 ## Những điều KHÔNG làm
 
 ```ts

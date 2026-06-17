@@ -64,6 +64,8 @@ export interface FormSettings {
   collectEmail: boolean
 }
 
+export type FormStatus = 'draft' | 'published' | 'closed'
+
 export interface FormSchema {
   id: string
   title: string
@@ -71,7 +73,8 @@ export interface FormSchema {
   steps: StepSchema[]
   theme: ThemeConfig
   settings: FormSettings
-  published: boolean
+  status: FormStatus
+  responseCount: number
   createdAt: string
   updatedAt: string
 }

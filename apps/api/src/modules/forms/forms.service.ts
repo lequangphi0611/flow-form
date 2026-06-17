@@ -1,35 +1,92 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
-import { PrismaService } from '../../prisma/prisma.service'
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+  UnprocessableEntityException,
+} from '@nestjs/common'
+import { FormsRepository } from './forms.repository'
+import type { CreateFormDraftDto, UpdateFormDto } from '@flowform/validators'
+import type { FormSchema } from '@flowform/types'
 
 @Injectable()
 export class FormsService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(FormsService.name)
 
-  findAll() {
-    // TODO: filter by authenticated user
-    return this.prisma.form.findMany({ orderBy: { updatedAt: 'desc' } })
+  constructor(private readonly formsRepository: FormsRepository) {}
+
+  // === QUERY ===
+
+  async listForms(userId: string): Promise<FormSchema[]> {
+    return this.formsRepository.findByOwner(userId)
   }
 
-  async findOne(id: string) {
-    const form = await this.prisma.form.findUnique({ where: { id } })
-    if (!form) throw new NotFoundException('Form không tồn tại')
+  async getFormOrThrow(id: string): Promise<FormSchema> {
+    const form = await this.formsRepository.findById(id)
+    if (!form) {
+      throw new NotFoundException({
+        type: 'https://flowform.dev/errors/not-found',
+        title: 'Form Not Found',
+        status: 404,
+        detail: `Form '${id}' does not exist.`,
+      })
+    }
     return form
   }
 
-  create(data: unknown) {
-    // TODO: validate with formSchemaValidator, attach ownerId from session
-    return this.prisma.form.create({ data: data as any })
+  async getPublishedFormOrThrow(id: string): Promise<FormSchema> {
+    const form = await this.formsRepository.findPublishedById(id)
+    if (!form) {
+      throw new NotFoundException({
+        type: 'https://flowform.dev/errors/not-found',
+        title: 'Form Not Found',
+        status: 404,
+        detail: `Form '${id}' does not exist or is not published.`,
+      })
+    }
+    return form
   }
 
-  update(id: string, data: unknown) {
-    return this.prisma.form.update({ where: { id }, data: data as any })
+  // === COMMAND ===
+
+  async createForm(userId: string, dto: CreateFormDraftDto): Promise<FormSchema> {
+    this.logger.log(`Creating form for user ${userId}`)
+    return this.formsRepository.create(userId, dto.title)
   }
 
-  publish(id: string) {
-    return this.prisma.form.update({ where: { id }, data: { published: true } })
+  async updateForm(id: string, dto: UpdateFormDto): Promise<FormSchema> {
+    // FormOwnerGuard has already verified existence and ownership
+    return this.formsRepository.update(id, dto)
   }
 
-  remove(id: string) {
-    return this.prisma.form.delete({ where: { id } })
+  async publishForm(id: string): Promise<FormSchema> {
+    // FormOwnerGuard has already verified existence and ownership
+    const form = await this.getFormOrThrow(id)
+
+    if (form.status !== 'draft') {
+      throw new BadRequestException({
+        type: 'https://flowform.dev/errors/invalid-transition',
+        title: 'Invalid Status Transition',
+        status: 400,
+        detail: `Form must be in 'draft' status to publish. Current status: '${form.status}'.`,
+      })
+    }
+
+    if (form.steps.length === 0) {
+      throw new UnprocessableEntityException({
+        type: 'https://flowform.dev/errors/empty-form',
+        title: 'Form Cannot Be Published',
+        status: 422,
+        detail: 'Form must have at least one step before publishing.',
+      })
+    }
+
+    return this.formsRepository.publish(id)
+  }
+
+  async deleteForm(id: string): Promise<void> {
+    // FormOwnerGuard has already verified existence and ownership
+    await this.formsRepository.delete(id)
+    this.logger.log(`Form deleted: ${id}`)
   }
 }
