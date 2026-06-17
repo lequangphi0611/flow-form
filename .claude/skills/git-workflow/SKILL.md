@@ -1,21 +1,56 @@
 ---
 name: git-workflow
 description: >
-  FlowForm git workflow — branch naming and commit message conventions.
-  Auto-load when: creating a branch, starting a new story or task,
+  FlowForm git workflow — sprint branching, story branching, and commit conventions.
+  Auto-load when: starting a sprint, creating a branch, starting a new story or task,
   writing or reviewing a commit message, or asked about branch/commit format.
 ---
 
 # Git Workflow — FlowForm
 
-Branch naming và commit convention cho monorepo này. Đọc trước khi tạo
-branch mới hoặc commit.
+Branch hierarchy và commit convention cho monorepo này. Đọc trước khi bắt
+đầu sprint mới, tạo branch, hoặc commit.
 
 ---
 
-## Branch naming
+## Branch hierarchy
 
-Pattern: `{type}/US-{id}-{slug}`
+```
+main
+└── sprint/sprint-{N}          ← tạo khi bắt đầu sprint
+    ├── feature/US-{id}-{slug} ← tạo khi bắt đầu 1 US
+    ├── fix/US-{id}-{slug}
+    └── chore/US-{id}-{slug}
+```
+
+Feature branch **luôn base từ sprint branch**, không phải `main`.
+
+---
+
+## Bắt đầu sprint mới
+
+```bash
+# Tạo sprint branch từ main
+git checkout main
+git pull origin main
+git checkout -b sprint/sprint-{N}
+git push -u origin sprint/sprint-{N}
+```
+
+Ví dụ: `sprint/sprint-1`, `sprint/sprint-2`
+
+---
+
+## Bắt đầu User Story
+
+```bash
+# Base từ sprint branch hiện tại, KHÔNG phải main
+git checkout sprint/sprint-{N}
+git pull origin sprint/sprint-{N}
+git checkout -b feature/US-{id}-{slug}
+```
+
+Pattern tên branch: `{type}/US-{id}-{slug}`
 
 | Type | Khi nào |
 |---|---|
@@ -24,20 +59,13 @@ Pattern: `{type}/US-{id}-{slug}`
 | `chore/` | Refactor, config, migration, tooling |
 
 ```bash
-# ✅ Đúng
-feature/US-003-api-forms-crud
-fix/US-012-wizard-validation-error
-chore/US-021-update-clean-code-rules
+# ✅ Đúng — base từ sprint branch
+git checkout -b feature/US-003-api-forms-crud   # khi đang ở sprint/sprint-1
 
 # ❌ Sai
-feat/forms-api            # thiếu US-{id}
-feature/forms             # thiếu id và slug mô tả
-US-003-forms              # thiếu type prefix
-```
-
-Tạo và checkout:
-```bash
-git checkout -b feature/US-{id}-{slug}
+git checkout -b feature/US-003-api-forms-crud main  # base từ main, bỏ qua sprint
+feat/forms-api                                       # thiếu US-{id}
+feature/forms                                        # thiếu id và slug
 ```
 
 ---
@@ -94,8 +122,10 @@ fix(clean-code): apply FE clean code fixes from review
 
 ## Checklist trước khi tạo branch
 
+- [ ] Sprint branch đã tồn tại (`sprint/sprint-{N}`)
 - [ ] Branch name đúng `type/US-{id}-{slug}`
 - [ ] `type` prefix là `feature`, `fix`, hoặc `chore` — không phải `feat`
+- [ ] Branch được tạo từ sprint branch, không phải `main`
 
 ## Checklist trước khi commit
 
