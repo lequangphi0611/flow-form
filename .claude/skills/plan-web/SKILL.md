@@ -10,7 +10,7 @@ description: >
 # /plan-web — Web Implementation Plan
 
 **Input:** sub-story ID — ví dụ `/plan-web US-004b`
-**Flow:** Read story → load FE rules → gen plan → approve gate → implement
+**Flow:** Read story → load FE rules → design wireframe → gen plan → approve gate → implement
 
 ---
 
@@ -39,11 +39,45 @@ Trước khi viết plan, đọc **bắt buộc**:
 | `rules/frontend/03-state.md` | Dùng Zustand store hoặc useState |
 | `rules/frontend/13-error-handling.md` | Cần xử lý lỗi từ mutation/query |
 | `rules/frontend/20-layout-decisions.md` | Tạo page mới hoặc đụng layout |
+| `rules/frontend/14-ui-design.md` | **Luôn đọc** — typography, spacing, màu sắc, pattern chuẩn |
 | `rules/shared/03-clean-code.md` | Mọi task (luôn đọc) |
 
-## Step 3 — Tạo implementation plan
+Ngoài ra: chạy `ls apps/web/src/components/ui/` để lấy danh sách shadcn đã cài.
 
-Format chuẩn — in ra chat:
+## Step 3 — Thiết kế wireframe (dùng logic /design-ui)
+
+Trước khi viết plan, output wireframe theo format chuẩn của `/design-ui`:
+
+```
+## Wireframe: [Tên trang/feature]
+Route: [path]  |  Route group: [(name)]  |  Layout: [pattern từ rule 20]
+
+┌─────────────────────────────────────────────────────────────┐
+│  [ASCII wireframe — dùng ký tự box drawing: ┌─┐│└┘├┤┬┴┼]  │
+│  Ghi rõ từng vùng: HEADER / SIDEBAR / CONTENT              │
+│  Trong mỗi vùng: mô tả element + shadcn component tương ứng│
+└─────────────────────────────────────────────────────────────┘
+
+### Shadcn components cần dùng
+| Component | Shadcn | Cần cài chưa? |
+|---|---|---|
+| ... | `<Button>` | ✅ đã có |
+| ... | `<Card>` | ⚠️ chưa cài — npx shadcn add card |
+
+### Interactions
+- [Các interaction chính: click, hover, loading, empty state]
+```
+
+**Ràng buộc wireframe:**
+- Layout theo route group từ rule 20 — không bịa pattern mới
+- Spacing: `p-6` dashboard, `gap-4` grid, `space-y-4` fields
+- Typography: `text-2xl font-bold` h1, `text-sm text-gray-500` description
+- Màu semantic: `text-blue-600` link, `text-red-600` error
+- Chỉ dùng `lucide-react` icon
+
+## Step 4 — Tạo implementation plan
+
+Dựa trên wireframe ở Step 3, tạo plan theo format chuẩn — in ra chat:
 
 ```
 ## Plan: {US-id} — {Tên ngắn}
@@ -70,6 +104,9 @@ Format chuẩn — in ra chat:
 ### API endpoints cần (phải xong trước)
 - `GET /api/forms` — list forms (US-{id}a phải xong trước)
 
+### shadcn cần cài thêm
+- `npx shadcn add card badge` — [từ wireframe Step 3]
+
 ### Checklist
 - [ ] Component có side effect → tách Container/Presenter (rule 08)
 - [ ] Component mới đặt đúng thư mục (rule 09)
@@ -77,32 +114,36 @@ Format chuẩn — in ra chat:
 - [ ] Không gọi fetch() trực tiếp trong component (rule 11)
 - [ ] Không có `any`, không có `console.log`
 - [ ] Boolean variable có prefix is/has/can/should
+- [ ] shadcn components thiếu đã được liệt kê để cài
 ```
 
-## Step 4 — Approval gate (BẮT BUỘC)
+## Step 5 — Approval gate (BẮT BUỘC)
 
-Sau khi in plan, dùng `AskUserQuestion`:
+Sau khi in wireframe + plan, dùng `AskUserQuestion`:
 
 ```
 AskUserQuestion({
   questions: [{
-    question: "Plan trên có ổn không?",
-    header: "Approve plan",
+    question: "Wireframe và plan trên có ổn không?",
+    header: "Approve",
     options: [
       { label: "Approve — implement ngay",  description: "Bắt đầu viết code theo plan" },
-      { label: "Revise — cần điều chỉnh",   description: "Mô tả thay đổi trong notes" },
+      { label: "Revise wireframe",          description: "Điều chỉnh thiết kế UI trước" },
+      { label: "Revise plan",               description: "Giữ wireframe, điều chỉnh implementation plan" },
     ],
     multiSelect: false
   }]
 })
 ```
 
-- **Approve** → chuyển sang Step 5
-- **Revise** → cập nhật plan theo feedback, hỏi lại
+- **Approve** → chuyển sang Step 6
+- **Revise wireframe** → cập nhật wireframe, cập nhật plan theo, hỏi lại
+- **Revise plan** → giữ nguyên wireframe, cập nhật plan, hỏi lại
 
-## Step 5 — Implement
+## Step 6 — Implement
 
 Thực hiện đúng theo plan đã approve:
-1. Tạo/sửa files theo thứ tự: shared types → hooks → presenter → container → page
-2. Chạy `git add` và `git commit` theo convention: `feat(web): ...` hoặc `feat(fe): ...`
-3. Báo cáo ngắn: file đã tạo/sửa + commit hash
+1. Cài shadcn components còn thiếu (`npx shadcn add ...`) nếu có
+2. Tạo/sửa files theo thứ tự: shared types → hooks → presenter → container → page
+3. Chạy `git add` và `git commit` theo convention: `feat(web): ...` hoặc `feat(fe): ...`
+4. Báo cáo ngắn: file đã tạo/sửa + commit hash
