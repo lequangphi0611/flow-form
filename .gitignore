@@ -20,6 +20,9 @@ out/
 # Prisma
 prisma/*.db
 
+# Claude Code
+.claude/worktrees/
+
 # Misc
 .DS_Store
 *.pem
