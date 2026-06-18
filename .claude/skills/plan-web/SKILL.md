@@ -114,10 +114,10 @@ Dựa trên wireframe ở Step 3, tạo plan theo format chuẩn — in ra chat:
 - [ ] Không gọi fetch() trực tiếp trong component (rule 11)
 - [ ] Không có `any`, không có `console.log`
 - [ ] Boolean variable có prefix is/has/can/should
-- [ ] Radix trigger dùng `asChild` + `<Button>`, **không** dùng raw `<button>` bên trong trigger (rule 06 §8)
+- [ ] Base UI trigger dùng `render={<Button .../>}`, **không** dùng raw `<button>` bên trong trigger (rule 06 §8)
 - [ ] List items trong Builder: `memo` + nhận `(stepId, fieldId)` + đọc store trực tiếp — **không nhận callbacks từ `.map()`** (rule 07 §4, rule 17 §5c)
 - [ ] List items ngoài Builder (FormCard, ResponseRow…): bọc `memo`, callbacks từ parent phải stable (rule 17 §1)
-- [ ] shadcn components thiếu đã được liệt kê để cài
+- [ ] Base UI components thiếu đã được liệt kê để tạo thủ công
 ```
 
 ## Step 5 — Approval gate (BẮT BUỘC)

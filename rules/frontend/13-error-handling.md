@@ -80,8 +80,8 @@ export default function FormNotFound() {
     <div className="flex flex-col items-center justify-center h-[60vh] gap-4 text-center">
       <p className="text-lg font-medium text-gray-800">Form không tồn tại</p>
       <p className="text-sm text-gray-500">Form này đã bị xóa hoặc link không đúng.</p>
-      <Button asChild variant="outline">
-        <Link href="/forms">Quay về danh sách form</Link>
+      <Button variant="outline" render={<Link href="/forms" />}>
+        Quay về danh sách form
       </Button>
     </div>
   )

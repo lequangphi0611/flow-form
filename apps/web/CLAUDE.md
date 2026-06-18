@@ -43,7 +43,7 @@
 | | Thư viện | Dùng cho |
 |---|---|---|
 | Framework | Next.js 15 (App Router) | Routing, SSR cho public form, layout |
-| UI | shadcn/ui (Radix) + Tailwind CSS v4 | Components, styling — dùng `asChild` cho triggers |
+| UI | Base UI (@base-ui/react) + Tailwind CSS v4 | Headless components — dùng `render` prop cho triggers |
 | State | Zustand + Immer | Builder state (steps, fields, logic) |
 | DnD | dnd-kit | Drag & drop trong Builder |
 | Form | React Hook Form + Zod | Wizard renderer — validate từng step |
@@ -109,7 +109,7 @@ components/auth/RegisterForm.tsx                  ← nhận { isPending, onSubm
 
 Mỗi khi tạo component mới, trả lời theo thứ tự:
 
-1. **Có phải shadcn/ui primitive?** → `components/ui/` (Atom — do `npx shadcn add` generate hoặc tự tạo wrapper Radix)
+1. **Có phải Base UI primitive?** → `components/ui/` (Atom — tự tạo wrapper `@base-ui/react/<name>`)
 2. **Dùng được ở nhiều feature, không fetch, không đọc store?** → `components/common/` (Molecule)
 3. **Gắn với 1 feature cụ thể?** → `components/[feature]/` (Organism)
    - auth form → `components/auth/`
@@ -163,12 +163,9 @@ Mỗi khi tạo component mới, trả lời theo thứ tự:
 - Client Components: dùng TanStack Query hooks
 - Public form page (`f/[formId]`): fetch ở Server Component, pass xuống client
 
-### shadcn/ui setup
-Thêm component mới:
-```bash
-npx shadcn@latest add button input dialog
-```
-Nếu không có network, tạo thủ công: wrap `@radix-ui/react-<name>` theo pattern của `button.tsx`/`dropdown-menu.tsx` — dùng `asChild`, không dùng `render` prop.
+### Thêm UI primitive mới
+
+Tạo thủ công trong `components/ui/`: wrap `@base-ui/react/<name>` theo pattern của `button.tsx`/`dropdown-menu.tsx` — dùng `render` prop cho trigger composition, không dùng `asChild`.
 
 ### Thêm thư viện mới
 Chỉ thêm vào `apps/web/package.json`, không phải root.

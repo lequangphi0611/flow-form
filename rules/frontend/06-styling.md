@@ -1,4 +1,4 @@
-# 06 — Quy tắc Styling với Tailwind CSS v4 + shadcn/ui
+# 06 — Quy tắc Styling với Tailwind CSS v4 + Base UI
 
 ## 1. Dùng `cn()` để merge classes
 
@@ -227,7 +227,7 @@ export function FormsGrid({ forms }: { forms: FormSchema[] }) {
 
 ## 8. Dùng UI primitives — không dùng raw HTML khi đã có component
 
-Project dùng **shadcn/ui** trên nền **Radix UI**. Trigger components hỗ trợ `asChild` — dùng để compose với `Button` từ `components/ui/`.
+Project dùng **Base UI** (`@base-ui/react`). Trigger components hỗ trợ `render` prop — dùng để compose với `Button` từ `components/ui/`.
 
 ### Nguyên tắc: raw HTML element chỉ chấp nhận ở 2 trường hợp
 
@@ -238,7 +238,7 @@ Project dùng **shadcn/ui** trên nền **Radix UI**. Trigger components hỗ tr
 
 Mọi trường hợp còn lại: dùng component từ `components/ui/`.
 
-### Trigger + `asChild` — không dùng raw `<button>`
+### Trigger + `render` prop — không dùng raw `<button>`
 
 ```tsx
 // ❌ — Raw button bên trong trigger: tạo nested <button><button>
@@ -246,16 +246,16 @@ Mọi trường hợp còn lại: dùng component từ `components/ui/`.
   <button className="inline-flex ...">Thêm câu hỏi</button>
 </DropdownMenuTrigger>
 
-// ✅ — asChild: Radix merge props của trigger vào Button, không tạo nested element
-<DropdownMenuTrigger asChild>
-  <Button variant="outline" size="sm" className="w-full gap-2">
-    <Plus className="h-4 w-4" />
-    Thêm câu hỏi
-  </Button>
+// ✅ — render prop: Base UI merge props của trigger vào Button, không tạo nested element
+<DropdownMenuTrigger
+  render={<Button variant="outline" size="sm" className="w-full gap-2" />}
+>
+  <Plus className="h-4 w-4" />
+  Thêm câu hỏi
 </DropdownMenuTrigger>
 ```
 
-`asChild` hoạt động với mọi Radix trigger: `DropdownMenuTrigger`, `DialogTrigger`, `DialogClose`, v.v.
+`render` prop hoạt động với mọi Base UI trigger: `DropdownMenuTrigger`, `DialogTrigger`, `DialogClose`, v.v.
 
 ### Toggle / switch — dùng `<Switch>` từ `ui/switch.tsx`
 
@@ -277,7 +277,7 @@ import { Switch } from '@/components/ui/switch'
 
 ### Thêm UI primitive mới
 
-Khi cần primitive chưa có trong `components/ui/` (ví dụ: `tooltip`, `popover`), tạo wrapper từ `@radix-ui/react-<name>` theo pattern của `button.tsx` và `dropdown-menu.tsx` — **không** tự implement bằng raw HTML.
+Khi cần primitive chưa có trong `components/ui/` (ví dụ: `tooltip`, `popover`), tạo wrapper từ `@base-ui/react/<name>` theo pattern của `button.tsx` và `dropdown-menu.tsx` — **không** tự implement bằng raw HTML.
 
 ---
 
