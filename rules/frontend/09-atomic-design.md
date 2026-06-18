@@ -5,7 +5,7 @@
 Atomic Design được điều chỉnh cho Next.js App Router + shadcn/ui. Bỏ tầng **Templates** vì Next.js `layout.tsx` đã đảm nhiệm vai trò đó.
 
 ```
-Atoms       →  components/ui/          (shadcn/ui primitives)
+Atoms       →  components/ui/          (shadcn/ui generated)
 Molecules   →  components/common/      (kết hợp atoms, dùng chung toàn app)
 Organisms   →  components/[feature]/   (phức tạp, gắn với feature)
 (Templates) →  app/**/layout.tsx       (Next.js layout thay thế)
@@ -28,8 +28,9 @@ components/ui/
 ├── badge.tsx
 ├── card.tsx
 ├── dialog.tsx
-├── select.tsx
-└── separator.tsx
+├── dropdown-menu.tsx
+├── skeleton.tsx
+└── switch.tsx
 ```
 
 **Khi cần custom atom:** Tạo file mới trong `components/common/` — không sửa file trong `ui/`.

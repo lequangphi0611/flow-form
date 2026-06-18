@@ -1,4 +1,4 @@
-# 06 — Quy tắc Styling với Tailwind CSS v4 + shadcn/ui
+# 06 — Quy tắc Styling với Tailwind CSS v4 + Base UI
 
 ## 1. Dùng `cn()` để merge classes
 
@@ -225,7 +225,70 @@ export function FormsGrid({ forms }: { forms: FormSchema[] }) {
 
 ---
 
-## 8. cva — dùng cho component có nhiều variants
+## 8. Dùng UI primitives — không dùng raw HTML khi đã có component
+
+Project dùng **shadcn/ui** (`@radix-ui/*`). Trigger components hỗ trợ `asChild` — dùng để compose với `Button` từ `components/ui/`.
+
+### Nguyên tắc: raw HTML element chỉ chấp nhận ở 2 trường hợp
+
+| Trường hợp | Lý do |
+|---|---|
+| dnd-kit drag handle | Spread `{...attributes}` + `{...listeners}` — không nên bọc thêm |
+| Button nhỏ inline trong styled chip (ví dụ: X trong tag badge) | Kích thước quá nhỏ, `size="icon-xs"` vẫn lớn hơn cần |
+
+Mọi trường hợp còn lại: dùng component từ `components/ui/`.
+
+### Trigger + `asChild` — không dùng raw `<button>`
+
+```tsx
+// ❌ — Raw button trong trigger: tạo nested <button><button>
+<DropdownMenuTrigger>
+  <button className="inline-flex w-full ... px-3 py-1.5 ...">
+    Thêm câu hỏi
+  </button>
+</DropdownMenuTrigger>
+
+// ✅ — asChild: Radix merge trigger props vào Button
+<DropdownMenuTrigger asChild>
+  <Button variant="outline" size="sm" className="w-full gap-2">
+    <Plus className="h-4 w-4" />
+    Thêm câu hỏi
+  </Button>
+</DropdownMenuTrigger>
+```
+
+`asChild` hoạt động với mọi Radix trigger: `DropdownMenuTrigger`, `DialogTrigger`, `DialogClose`, v.v.
+
+### Toggle / switch — dùng `<Switch>` từ `ui/switch.tsx`
+
+```tsx
+// ❌ — Custom implementation với raw button
+<button type="button" role="switch" aria-checked={field.required}
+  className="relative inline-flex h-4 w-7 rounded-full ...">
+  <span className="... translate-x-3" />
+</button>
+
+// ✅ — Dùng Switch từ components/ui/
+import { Switch } from '@/components/ui/switch'
+
+<Switch
+  checked={field.required}
+  onCheckedChange={(checked) => onUpdate({ required: checked })}
+/>
+```
+
+### Thêm UI primitive mới
+
+Khi cần primitive chưa có trong `components/ui/` (ví dụ: `tooltip`, `popover`), chạy shadcn CLI — **không** tự implement bằng raw HTML.
+
+```bash
+npx shadcn@latest add tooltip
+npx shadcn@latest add popover
+```
+
+---
+
+## 9. cva — dùng cho component có nhiều variants
 
 ```tsx
 // ✅ — Dùng cva khi component có nhiều variant combinations

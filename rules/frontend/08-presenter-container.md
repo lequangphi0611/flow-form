@@ -150,65 +150,80 @@ export function FormListContainer() {
 }
 ```
 
+> ⚠️ **Ngoại lệ Builder — list items:** `FieldCard`, `StepItem` và các list items trong Builder **KHÔNG** nhận callbacks từ Container hay Presenter. Thay vào đó, chúng nhận IDs và tự đọc data từ store qua selector, gọi store actions trực tiếp. Lý do: callbacks inline trong `.map()` tạo reference mới mỗi render → `React.memo` vô nghĩa. Xem rule 07 §4.
+
 ---
 
 ### 4. Builder module — Container + Store thay vì Container + API
 
-Trong Builder, data đến từ Zustand store chứ không phải API trực tiếp.
+Trong Builder, data đến từ Zustand store chứ không phải API trực tiếp. Container kết nối store và truyền xuống Presenter, nhưng list items KHÔNG nhận callbacks — chúng tự đọc store.
 
 ```tsx
-// ✅ — BuilderCanvasContainer kết nối store, StepCanvas chỉ render
-// src/components/builder/containers/BuilderCanvasContainer.tsx
+// ✅ — FieldPanelContainer kết nối store, FieldPanel orchestrate DnD
+// src/components/builder/containers/FieldPanelContainer.tsx
 'use client'
 
 import { useBuilderStore } from '@/store/builder.store'
-import { StepCanvas } from '../StepCanvas'
+import { FieldPanel } from '../FieldPanel'
 
-export function BuilderCanvasContainer() {
-  const form = useBuilderStore((s) => s.form)
+export function FieldPanelContainer() {
   const selectedStepId = useBuilderStore((s) => s.selectedStepId)
-  const updateField = useBuilderStore((s) => s.updateField)
+  const activeStep = useBuilderStore((s) =>
+    s.form?.steps.find((step) => step.id === s.selectedStepId)
+  )
+  const addField = useBuilderStore((s) => s.addField)
+  const reorderFields = useBuilderStore((s) => s.reorderFields)
 
-  if (!form) return null
-
-  const activeStep = form.steps.find((s) => s.id === selectedStepId) ?? form.steps[0]
+  if (!selectedStepId || !activeStep) return null
 
   return (
-    <StepCanvas
-      step={activeStep}
-      onUpdateField={(fieldId, updates) =>
-        updateField(activeStep.id, fieldId, updates)
-      }
+    <FieldPanel
+      stepId={selectedStepId}
+      stepTitle={activeStep.title}
+      fields={activeStep.fields}
+      onAddField={(type) => addField(selectedStepId, type)}
+      onReorderFields={(from, to) => reorderFields(selectedStepId, from, to)}
     />
   )
 }
 ```
 
 ```tsx
-// ✅ — StepCanvas: Presenter thuần, không biết Zustand tồn tại
-// src/components/builder/StepCanvas.tsx
-import type { StepSchema, FieldSchema } from '@flowform/types'
-import { FieldRenderer } from './FieldRenderer'
+// ✅ — FieldPanel: Presenter — orchestrate DnD, list items chỉ nhận IDs
+// src/components/builder/FieldPanel.tsx
 
-interface StepCanvasProps {
-  step: StepSchema
-  onUpdateField: (fieldId: string, updates: Partial<FieldSchema>) => void
-}
+// Key: KHÔNG truyền onUpdateField, onDeleteField xuống FieldCard
+// FieldCard tự đọc field từ store, gọi store actions trực tiếp
+{fields.map((field) => (
+  <FieldCard key={field.id} stepId={stepId} fieldId={field.id} />
+))}
+```
 
-export function StepCanvas({ step, onUpdateField }: StepCanvasProps) {
+```tsx
+// ❌ — SAI: Container truyền callbacks, Presenter tạo inline callbacks trong .map()
+export function BuilderCanvasContainer() {
+  const updateField = useBuilderStore((s) => s.updateField)
+  const activeStep = useBuilderStore((s) => ...)  // tạo object mới mỗi khi store đổi
+
   return (
-    <div className="flex flex-col gap-4 p-6 max-w-2xl mx-auto">
-      <h2 className="text-xl font-semibold">{step.title}</h2>
-      {step.fields.map((field) => (
-        <FieldRenderer
-          key={field.id}
-          field={field}
-          onUpdate={(updates) => onUpdateField(field.id, updates)}
-        />
-      ))}
-    </div>
+    <StepCanvas
+      step={activeStep}                                           // ← new ref mỗi render
+      onUpdateField={(fieldId, updates) =>                       // ← new fn ref mỗi render
+        updateField(activeStep.id, fieldId, updates)
+      }
+    />
   )
 }
+
+// StepCanvas:
+{step.fields.map((field) => (
+  <FieldRenderer
+    key={field.id}
+    field={field}
+    onUpdate={(updates) => onUpdateField(field.id, updates)}  // ← new fn ref mỗi render
+  />
+))}
+// → memo trên FieldRenderer vô nghĩa, toàn bộ list re-render khi bất kỳ field nào thay đổi
 ```
 
 ---
@@ -339,8 +354,9 @@ export function RegisterForm({ isPending, error, onSubmit }: RegisterFormProps) 
 | Component cần `useQuery` | ✅ Tạo Container |
 | Component cần `useMutation` | ✅ Tạo Container |
 | Component gọi `signIn.email()` / `signUp.email()` | ✅ Tạo Container |
-| Component gọi `router.push()` sau side effect và có UI phức tạp | ✅ Tạo Container |
-| Component đọc từ Zustand store | ✅ Tạo Container (hoặc bản thân nó là Container) |
+| Component gọi `router.push()` sau side effect | ✅ Tạo Container |
+| Component đọc từ Zustand store (ngoài Builder list items) | ✅ Tạo Container |
+| **Builder list items** (`FieldCard`, `StepItem`…) đọc store trực tiếp | ❌ Không cần Container — pattern rule 07 §4 |
 | Server Component async fetch | ✅ Server Component = Container tự nhiên |
 | Component chỉ nhận props và render | ❌ Không cần Container, đây là Presenter |
 | Component có `useState` UI đơn giản | ❌ Không cần Container (toggle, hover không tính) |

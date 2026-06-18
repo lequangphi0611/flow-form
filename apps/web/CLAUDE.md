@@ -43,7 +43,7 @@
 | | Thư viện | Dùng cho |
 |---|---|---|
 | Framework | Next.js 15 (App Router) | Routing, SSR cho public form, layout |
-| UI | shadcn/ui + Tailwind CSS v4 | Components, styling |
+| UI | shadcn/ui + Tailwind CSS v4 | Components, styling — dùng `asChild`, KHÔNG dùng `render` prop |
 | State | Zustand + Immer | Builder state (steps, fields, logic) |
 | DnD | dnd-kit | Drag & drop trong Builder |
 | Form | React Hook Form + Zod | Wizard renderer — validate từng step |
@@ -67,7 +67,7 @@ src/
 │   │   └── forms/[id]/analytics/page.tsx
 │   └── f/[formId]/page.tsx   ← Public form — SSR
 ├── components/
-│   ├── ui/                   ← ATOM: shadcn primitives (Button, Input, Label...)
+│   ├── ui/                   ← ATOM: shadcn/ui generated — KHÔNG EDIT trực tiếp
 │   ├── common/               ← MOLECULE: tổ hợp atoms dùng chung (FormField, EmptyState...)
 │   ├── auth/                 ← ORGANISM: components của feature auth
 │   ├── forms/                ← ORGANISM: components của feature quản lý form
@@ -109,7 +109,7 @@ components/auth/RegisterForm.tsx                  ← nhận { isPending, onSubm
 
 Mỗi khi tạo component mới, trả lời theo thứ tự:
 
-1. **Có phải shadcn primitive?** → `components/ui/` (Atom — do `npx shadcn` generate, không tự tạo)
+1. **Có phải shadcn primitive?** → `components/ui/` (Atom — thêm qua `npx shadcn@latest add`)
 2. **Dùng được ở nhiều feature, không fetch, không đọc store?** → `components/common/` (Molecule)
 3. **Gắn với 1 feature cụ thể?** → `components/[feature]/` (Organism)
    - auth form → `components/auth/`
@@ -163,15 +163,14 @@ Mỗi khi tạo component mới, trả lời theo thứ tự:
 - Client Components: dùng TanStack Query hooks
 - Public form page (`f/[formId]`): fetch ở Server Component, pass xuống client
 
-### shadcn/ui setup
-Chạy lần đầu để khởi tạo shadcn:
+### Thêm UI primitive mới
+
+Chạy shadcn CLI từ `apps/web/`:
 ```bash
-npx shadcn@latest init
+npx shadcn@latest add tooltip
+npx shadcn@latest add popover
 ```
-Thêm component:
-```bash
-npx shadcn@latest add button input dialog
-```
+Không tự viết wrapper từ raw HTML hay Radix primitives trực tiếp.
 
 ### Thêm thư viện mới
 Chỉ thêm vào `apps/web/package.json`, không phải root.

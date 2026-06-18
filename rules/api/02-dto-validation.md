@@ -83,6 +83,33 @@ export type CreateFormDto = z.infer<typeof createFormSchema>
 import { createFormSchema } from '@flowform/validators'
 ```
 
+### Không định nghĩa Zod schema inline trong controller
+
+```ts
+// ❌ — Schema định nghĩa inline trong controller — không share được với frontend
+import { z } from 'zod'
+import { formSchemaSchema } from '@flowform/validators'
+
+const updateBodySchema = z.object({ schema: formSchemaSchema })  // ❌ định nghĩa ở đây
+
+@Patch(':id')
+updateForm(@Body(new ZodValidationPipe(updateBodySchema)) dto: { schema: ... }) {}
+```
+
+```ts
+// ✅ — Export schema từ @flowform/validators
+// packages/validators/src/form.schema.ts
+export const updateBuilderSchema = z.object({ schema: formSchemaSchema })
+export type UpdateBuilderDto = z.infer<typeof updateBuilderSchema>
+
+// apps/api/src/modules/forms/forms.controller.ts
+import { updateBuilderSchema } from '@flowform/validators'
+import type { UpdateBuilderDto } from '@flowform/validators'
+
+@Patch(':id')
+updateForm(@Body(new ZodValidationPipe(updateBuilderSchema)) dto: UpdateBuilderDto) {}
+```
+
 ---
 
 ## 3. ZodValidationPipe — custom pipe bắt buộc
