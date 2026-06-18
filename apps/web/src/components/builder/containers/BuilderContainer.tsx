@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useBuilderStore } from '@/store/builder.store'
 import { formsApi } from '@/lib/api/forms'
 import { formKeys } from '@/lib/query-keys'
+import { useAutoSave } from '../hooks/useAutoSave'
 import { BuilderLayout } from '../BuilderLayout'
 
 interface BuilderContainerProps {
@@ -14,6 +15,7 @@ interface BuilderContainerProps {
 export function BuilderContainer({ formId }: BuilderContainerProps) {
   const setForm = useBuilderStore((s) => s.setForm)
   const formTitle = useBuilderStore((s) => s.form?.title ?? '')
+  const saveStatus = useAutoSave(formId)
 
   const { data, isLoading, isError } = useQuery({
     queryKey: formKeys.editor(formId),
@@ -33,7 +35,7 @@ export function BuilderContainer({ formId }: BuilderContainerProps) {
     )
   }
 
-  return <BuilderLayout formId={formId} formTitle={formTitle} />
+  return <BuilderLayout formId={formId} formTitle={formTitle} saveStatus={saveStatus} />
 }
 
 function BuilderSkeleton() {
