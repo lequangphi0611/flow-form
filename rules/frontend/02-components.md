@@ -131,9 +131,9 @@ export function Panel({ children, className }: { children: React.ReactNode; clas
 
 ---
 
-## 3. Base UI — cách dùng đúng
+## 3. shadcn/ui — cách dùng đúng
 
-Các file trong `src/components/ui/` là Base UI wrappers được viết/tuỳ chỉnh cho project. Có thể sửa trực tiếp khi cần điều chỉnh variant, styling của primitive.
+Các file trong `src/components/ui/` là Radix UI wrappers được viết/tuỳ chỉnh cho project. Có thể sửa trực tiếp khi cần điều chỉnh variant, styling của primitive. **Lưu ý:** chạy `npx shadcn add <name>` sẽ overwrite file — review diff kỹ trước khi commit.
 
 ```tsx
 // ✅ — Sửa trực tiếp ui/ khi cần thay đổi primitive (ví dụ: thêm variant mới)
@@ -168,9 +168,13 @@ export function LoadingButton({ loading, children, disabled, ...props }: Loading
 }
 ```
 
-### Thêm UI primitive mới
-
-Tạo thủ công trong `components/ui/` theo pattern của `button.tsx` — wrap `@base-ui/react/<name>`, export đúng tên để các consumer import được. Dùng `render` prop thay vì `asChild` khi cần compose với custom component.
+### Thêm component shadcn mới
+```bash
+# Chạy từ thư mục apps/web (nếu có network)
+npx shadcn add dialog
+npx shadcn add dropdown-menu
+```
+Nếu không có network: tạo thủ công trong `components/ui/` theo pattern của `button.tsx` — wrap `@radix-ui/react-<name>`, export đúng tên để các consumer import được.
 
 ---
 

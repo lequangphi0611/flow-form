@@ -2,10 +2,10 @@
 
 ## Tổng quan
 
-Atomic Design được điều chỉnh cho Next.js App Router + Base UI. Bỏ tầng **Templates** vì Next.js `layout.tsx` đã đảm nhiệm vai trò đó.
+Atomic Design được điều chỉnh cho Next.js App Router + shadcn/ui. Bỏ tầng **Templates** vì Next.js `layout.tsx` đã đảm nhiệm vai trò đó.
 
 ```
-Atoms       →  components/ui/          (Base UI primitives)
+Atoms       →  components/ui/          (shadcn/ui primitives)
 Molecules   →  components/common/      (kết hợp atoms, dùng chung toàn app)
 Organisms   →  components/[feature]/   (phức tạp, gắn với feature)
 (Templates) →  app/**/layout.tsx       (Next.js layout thay thế)
@@ -18,7 +18,7 @@ Pages       →  app/**/page.tsx         (Next.js pages)
 
 - Không có business logic
 - Không gọi API, không đọc store
-- Là các Base UI wrappers — có thể sửa trực tiếp khi cần thay đổi variant/styling của primitive
+- Là các Radix UI wrappers — có thể sửa trực tiếp khi cần thay đổi variant/styling của primitive
 
 ```
 components/ui/
@@ -36,7 +36,7 @@ components/ui/
 **Khi cần custom atom với behaviour mới** (loading state, icon, v.v.): tạo wrapper trong `components/common/`. Khi chỉ cần thêm variant/class: sửa trực tiếp file trong `ui/`.
 
 ```tsx
-// ✅ — Custom atom: extend Base UI Button
+// ✅ — Custom atom: extend shadcn Button
 // src/components/common/LoadingButton.tsx
 import { Button } from '@/components/ui/button'
 import { Loader2 } from 'lucide-react'
