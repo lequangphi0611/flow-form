@@ -1,10 +1,8 @@
 'use client'
 
 import { useEffect } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import { useBuilderStore } from '@/store/builder.store'
-import { formsApi } from '@/lib/api/forms'
-import { formKeys } from '@/lib/query-keys'
+import { useFormForEditor } from '@/hooks/forms/useFormForEditor'
 import { useAutoSave } from '../hooks/useAutoSave'
 import { BuilderLayout } from '../BuilderLayout'
 
@@ -17,10 +15,7 @@ export function BuilderContainer({ formId }: BuilderContainerProps) {
   const formTitle = useBuilderStore((s) => s.form?.title ?? '')
   const saveStatus = useAutoSave(formId)
 
-  const { data, isLoading, isError } = useQuery({
-    queryKey: formKeys.editor(formId),
-    queryFn: () => formsApi.getForEditor(formId),
-  })
+  const { data, isLoading, isError } = useFormForEditor(formId)
 
   useEffect(() => {
     if (data) setForm(data)
