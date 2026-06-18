@@ -19,7 +19,7 @@
 | [`../../rules/frontend/03-state.md`](../../rules/frontend/03-state.md) | Thêm `useState`, `useReducer`, hoặc bất kỳ Zustand action nào vào component |
 | [`../../rules/frontend/04-data-fetching.md`](../../rules/frontend/04-data-fetching.md) | TanStack Query client hooks: useQuery, useMutation, query keys, optimistic update |
 | [`../../rules/frontend/05-forms.md`](../../rules/frontend/05-forms.md) | **Tạo bất kỳ form nào** — auth (login/register), dashboard settings, builder settings, wizard renderer — bất kỳ `<form>` element nào |
-| [`../../rules/frontend/06-styling.md`](../../rules/frontend/06-styling.md) | Styling với Tailwind + shadcn/ui |
+| [`../../rules/frontend/06-styling.md`](../../rules/frontend/06-styling.md) | Styling với Tailwind + Base UI |
 | [`../../rules/frontend/07-builder.md`](../../rules/frontend/07-builder.md) | Làm việc trong module Builder (dnd-kit, canvas, store) |
 | [`../../rules/frontend/08-presenter-container.md`](../../rules/frontend/08-presenter-container.md) | **Tạo component có useQuery, useMutation, useSession, useBuilderStore, signIn, signUp, signOut, hoặc router.push** — phải tách Container riêng trước khi viết JSX |
 | [`../../rules/frontend/09-atomic-design.md`](../../rules/frontend/09-atomic-design.md) | **Tạo component mới bất kỳ** — quyết định đặt file ở đâu trong `components/` |
@@ -67,7 +67,7 @@ src/
 │   │   └── forms/[id]/analytics/page.tsx
 │   └── f/[formId]/page.tsx   ← Public form — SSR
 ├── components/
-│   ├── ui/                   ← ATOM: shadcn/ui primitives (Button, Input, Label...)
+│   ├── ui/                   ← ATOM: Base UI primitives (Button, Input, Label...)
 │   ├── common/               ← MOLECULE: tổ hợp atoms dùng chung (FormField, EmptyState...)
 │   ├── auth/                 ← ORGANISM: components của feature auth
 │   ├── forms/                ← ORGANISM: components của feature quản lý form
