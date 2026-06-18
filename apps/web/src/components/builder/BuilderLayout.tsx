@@ -11,6 +11,8 @@ import {
 import { useBuilderStore } from '@/store/builder.store'
 import { Button } from '@/components/ui/button'
 import { StepList } from './StepList'
+import { FieldCanvas } from './FieldCanvas'
+import { FieldSettings } from './FieldSettings'
 
 interface BuilderLayoutProps {
   formId: string
@@ -19,6 +21,7 @@ interface BuilderLayoutProps {
 
 export function BuilderLayout({ formTitle }: BuilderLayoutProps) {
   const reorderSteps = useBuilderStore((s) => s.reorderSteps)
+  const reorderFields = useBuilderStore((s) => s.reorderFields)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -37,7 +40,14 @@ export function BuilderLayout({ formTitle }: BuilderLayoutProps) {
         reorderSteps(fromIndex, toIndex)
       }
     }
-    // US-004c: FIELD handling added here
+    if (dragType === 'FIELD') {
+      const stepId = active.data.current?.stepId as string
+      const fromIndex = active.data.current?.index as number
+      const toIndex = over.data.current?.index as number
+      if (stepId && typeof fromIndex === 'number' && typeof toIndex === 'number') {
+        reorderFields(stepId, fromIndex, toIndex)
+      }
+    }
   }
 
   return (
@@ -59,12 +69,12 @@ export function BuilderLayout({ formTitle }: BuilderLayoutProps) {
             <StepList />
           </aside>
 
-          <main className="flex-1 bg-gray-100 overflow-y-auto p-4">
-            {/* FieldCanvas — US-004c */}
+          <main className="flex-1 bg-gray-100 overflow-y-auto">
+            <FieldCanvas />
           </main>
 
           <aside className="w-72 border-l bg-white overflow-y-auto">
-            {/* FieldSettings — US-004c */}
+            <FieldSettings />
           </aside>
         </div>
       </div>
