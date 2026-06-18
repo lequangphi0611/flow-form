@@ -10,7 +10,7 @@ description: >
 # /breakdown — Story Decomposition
 
 **Input:** User Story ID — ví dụ `/breakdown US-004`
-**Output:** nhiều file `.md` trong cùng sprint folder + bảng execution waves in ra chat.
+**Output:** nhiều file `.md` trong subfolder `US-{id}/` thuộc sprint folder + bảng execution waves in ra chat.
 
 ---
 
@@ -106,9 +106,9 @@ story_points: 2
 [Endpoint, component, hook, schema cụ thể cần tạo/sửa]
 ```
 
-**Đặt file tại:** `po-requests/sprint-{N}/US-{id}{letter}-{slug}.md`
+**Đặt file tại:** `po-requests/sprint-{N}/US-{id}/US-{id}{letter}-{slug}.md`
 - `{slug}` = mô tả ngắn của sub-task, kebab-case
-- Ví dụ: `US-004a-api-form-schema.md`, `US-004b-web-step-management.md`
+- Ví dụ: `po-requests/sprint-1/US-004/US-004a-api-form-schema.md`
 
 ---
 
@@ -152,9 +152,9 @@ Story gốc có 3 clusters × 2 layers = 4 sub-stories (API được gộp chung
 
 | File | ID | Layer | SP | depends_on |
 |---|---|---|---|---|
-| `US-004a-api-form-schema.md` | US-004a | api | 2 | `[]` |
-| `US-004b-web-step-management.md` | US-004b | web | 3 | `[US-004a]` |
-| `US-004c-web-field-management.md` | US-004c | web | 2 | `[US-004a]` |
-| `US-004d-web-autosave.md` | US-004d | web | 1 | `[US-004a]` |
+| `US-004/US-004a-api-form-schema.md` | US-004a | api | 2 | `[]` |
+| `US-004/US-004b-web-step-management.md` | US-004b | web | 3 | `[US-004a]` |
+| `US-004/US-004c-web-field-management.md` | US-004c | web | 2 | `[US-004a]` |
+| `US-004/US-004d-web-autosave.md` | US-004d | web | 1 | `[US-004a]` |
 
 Wave 2 (US-004b, US-004c, US-004d) có thể dùng 3 agent song song sau khi US-004a xong.
