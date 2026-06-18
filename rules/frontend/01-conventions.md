@@ -63,7 +63,7 @@ export function FieldCard({ field }: { field: FieldSchema }) {
 ### Cấu trúc thư mục components
 ```
 src/components/
-├── ui/               ← ATOM: Base UI (@base-ui/react) primitives
+├── ui/               ← ATOM: shadcn/ui generated — KHÔNG EDIT trực tiếp
 ├── common/           ← MOLECULE: atoms kết hợp, dùng chung toàn app
 │   ├── FormField.tsx
 │   └── EmptyState.tsx

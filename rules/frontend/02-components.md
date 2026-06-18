@@ -131,25 +131,19 @@ export function Panel({ children, className }: { children: React.ReactNode; clas
 
 ---
 
-## 3. Base UI — cách dùng đúng
+## 3. shadcn/ui — cách dùng đúng
 
-Các file trong `src/components/ui/` là Base UI wrappers được viết/tuỳ chỉnh cho project. Có thể sửa trực tiếp khi cần điều chỉnh variant, styling của primitive.
+### KHÔNG modify file trong `components/ui/`
+Các file trong `src/components/ui/` do shadcn/ui generate. Chỉnh sửa trực tiếp sẽ bị ghi đè khi chạy `npx shadcn@latest add`.
 
 ```tsx
-// ✅ — Sửa trực tiếp ui/ khi cần thay đổi primitive (ví dụ: thêm variant mới)
-// src/components/ui/button.tsx — thêm variant "warning"
-const buttonVariants = cva('...', {
-  variants: {
-    variant: {
-      default: '...',
-      warning: 'bg-yellow-500 text-white hover:bg-yellow-600',  // ✅ OK khi thêm vào đây
-    },
-  },
-})
+// ❌ — Đừng sửa trực tiếp components/ui/button.tsx
+// src/components/ui/button.tsx
+// ... sửa file gốc ← sẽ bị ghi đè khi chạy npx shadcn@latest add
 ```
 
 ```tsx
-// ✅ — Tạo wrapper trong components/common/ khi thêm behaviour mới (loading, icon...)
+// ✅ — Tạo wrapper trong components/common/ khi cần behaviour mới (loading, icon...)
 // src/components/common/LoadingButton.tsx
 import { Button } from '@/components/ui/button'
 import { Loader2 } from 'lucide-react'
@@ -170,7 +164,11 @@ export function LoadingButton({ loading, children, disabled, ...props }: Loading
 
 ### Thêm UI primitive mới
 
-Tạo thủ công trong `components/ui/` theo pattern của `button.tsx` — wrap `@base-ui/react/<name>`, export đúng tên để các consumer import được. Dùng `render` prop thay vì `asChild` khi cần compose với custom component.
+```bash
+# Luôn chạy từ thư mục apps/web
+npx shadcn@latest add dialog
+npx shadcn@latest add dropdown-menu
+```
 
 ---
 

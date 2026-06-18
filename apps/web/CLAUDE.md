@@ -19,7 +19,7 @@
 | [`../../rules/frontend/03-state.md`](../../rules/frontend/03-state.md) | Thêm `useState`, `useReducer`, hoặc bất kỳ Zustand action nào vào component |
 | [`../../rules/frontend/04-data-fetching.md`](../../rules/frontend/04-data-fetching.md) | TanStack Query client hooks: useQuery, useMutation, query keys, optimistic update |
 | [`../../rules/frontend/05-forms.md`](../../rules/frontend/05-forms.md) | **Tạo bất kỳ form nào** — auth (login/register), dashboard settings, builder settings, wizard renderer — bất kỳ `<form>` element nào |
-| [`../../rules/frontend/06-styling.md`](../../rules/frontend/06-styling.md) | Styling với Tailwind + Base UI |
+| [`../../rules/frontend/06-styling.md`](../../rules/frontend/06-styling.md) | Styling với Tailwind + shadcn/ui |
 | [`../../rules/frontend/07-builder.md`](../../rules/frontend/07-builder.md) | Làm việc trong module Builder (dnd-kit, canvas, store) |
 | [`../../rules/frontend/08-presenter-container.md`](../../rules/frontend/08-presenter-container.md) | **Tạo component có useQuery, useMutation, useSession, useBuilderStore, signIn, signUp, signOut, hoặc router.push** — phải tách Container riêng trước khi viết JSX |
 | [`../../rules/frontend/09-atomic-design.md`](../../rules/frontend/09-atomic-design.md) | **Tạo component mới bất kỳ** — quyết định đặt file ở đâu trong `components/` |
@@ -43,7 +43,7 @@
 | | Thư viện | Dùng cho |
 |---|---|---|
 | Framework | Next.js 15 (App Router) | Routing, SSR cho public form, layout |
-| UI | Base UI (@base-ui/react) + Tailwind CSS v4 | Headless components — dùng `render` prop cho triggers |
+| UI | shadcn/ui + Tailwind CSS v4 | Components, styling — dùng `asChild`, KHÔNG dùng `render` prop |
 | State | Zustand + Immer | Builder state (steps, fields, logic) |
 | DnD | dnd-kit | Drag & drop trong Builder |
 | Form | React Hook Form + Zod | Wizard renderer — validate từng step |
@@ -67,7 +67,7 @@ src/
 │   │   └── forms/[id]/analytics/page.tsx
 │   └── f/[formId]/page.tsx   ← Public form — SSR
 ├── components/
-│   ├── ui/                   ← ATOM: Base UI primitives (Button, Input, Label...)
+│   ├── ui/                   ← ATOM: shadcn/ui generated — KHÔNG EDIT trực tiếp
 │   ├── common/               ← MOLECULE: tổ hợp atoms dùng chung (FormField, EmptyState...)
 │   ├── auth/                 ← ORGANISM: components của feature auth
 │   ├── forms/                ← ORGANISM: components của feature quản lý form
@@ -109,7 +109,7 @@ components/auth/RegisterForm.tsx                  ← nhận { isPending, onSubm
 
 Mỗi khi tạo component mới, trả lời theo thứ tự:
 
-1. **Có phải Base UI primitive?** → `components/ui/` (Atom — tự tạo wrapper `@base-ui/react/<name>`)
+1. **Có phải shadcn primitive?** → `components/ui/` (Atom — thêm qua `npx shadcn@latest add`)
 2. **Dùng được ở nhiều feature, không fetch, không đọc store?** → `components/common/` (Molecule)
 3. **Gắn với 1 feature cụ thể?** → `components/[feature]/` (Organism)
    - auth form → `components/auth/`
@@ -165,7 +165,12 @@ Mỗi khi tạo component mới, trả lời theo thứ tự:
 
 ### Thêm UI primitive mới
 
-Tạo thủ công trong `components/ui/`: wrap `@base-ui/react/<name>` theo pattern của `button.tsx`/`dropdown-menu.tsx` — dùng `render` prop cho trigger composition, không dùng `asChild`.
+Chạy shadcn CLI từ `apps/web/`:
+```bash
+npx shadcn@latest add tooltip
+npx shadcn@latest add popover
+```
+Không tự viết wrapper từ raw HTML hay Radix primitives trực tiếp.
 
 ### Thêm thư viện mới
 Chỉ thêm vào `apps/web/package.json`, không phải root.
