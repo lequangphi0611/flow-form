@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto'
 import { Injectable, Logger } from '@nestjs/common'
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library'
 import { PrismaService } from '../../prisma/prisma.service'
@@ -83,12 +84,13 @@ export class FormsRepository {
   }
 
   async create(ownerId: string, title: string): Promise<FormSchema> {
+    const defaultStep = { id: randomUUID(), title: 'Bước 1', fields: [] }
     const row = await this.prisma.form.create({
       data: {
         ownerId,
         title,
         status: 'draft',
-        schema: { steps: [] },
+        schema: { steps: [defaultStep] },
         settings: DEFAULT_SETTINGS as object,
         theme: DEFAULT_THEME as object,
       },
