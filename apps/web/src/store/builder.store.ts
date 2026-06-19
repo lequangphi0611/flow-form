@@ -34,6 +34,8 @@ export const useBuilderStore = create<BuilderState & BuilderActions>()(
     setForm: (form) =>
       set((s) => {
         s.form = form
+        s.selectedStepId = form.steps[0]?.id ?? null
+        s.selectedFieldId = null
       }),
 
     selectStep: (stepId) =>
