@@ -14,15 +14,14 @@ import { StepList } from './StepList'
 import { FieldCanvas } from './FieldCanvas'
 import { FieldSettings } from './FieldSettings'
 import { SaveStatus } from './SaveStatus'
+import { FormTitleInput } from './FormTitleInput'
 import type { SaveStatusValue } from './hooks/useAutoSave'
 
 interface BuilderLayoutProps {
-  formId: string
-  formTitle: string
   saveStatus: SaveStatusValue
 }
 
-export function BuilderLayout({ formTitle, saveStatus }: BuilderLayoutProps) {
+export function BuilderLayout({ saveStatus }: BuilderLayoutProps) {
   const reorderSteps = useBuilderStore((s) => s.reorderSteps)
   const reorderFields = useBuilderStore((s) => s.reorderFields)
 
@@ -61,9 +60,7 @@ export function BuilderLayout({ formTitle, saveStatus }: BuilderLayoutProps) {
             <Button variant="ghost" size="sm" asChild>
               <Link href="/forms">← Quay lại</Link>
             </Button>
-            <span className="text-lg font-semibold text-gray-900 truncate max-w-xs">
-              {formTitle}
-            </span>
+            <FormTitleInput />
           </div>
           <SaveStatus status={saveStatus} />
         </header>

@@ -12,7 +12,6 @@ interface BuilderContainerProps {
 
 export function BuilderContainer({ formId }: BuilderContainerProps) {
   const setForm = useBuilderStore((s) => s.setForm)
-  const formTitle = useBuilderStore((s) => s.form?.title ?? '')
   const saveStatus = useAutoSave(formId)
 
   const { data, isLoading, isError } = useFormForEditor(formId)
@@ -30,7 +29,7 @@ export function BuilderContainer({ formId }: BuilderContainerProps) {
     )
   }
 
-  return <BuilderLayout formId={formId} formTitle={formTitle} saveStatus={saveStatus} />
+  return <BuilderLayout saveStatus={saveStatus} />
 }
 
 function BuilderSkeleton() {
