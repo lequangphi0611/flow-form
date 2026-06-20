@@ -22,3 +22,18 @@ export const getFormForEditor = cache(async (id: string): Promise<FormSchema> =>
   if (!res.ok) throw new Error(`getFormForEditor failed: ${res.status}`)
   return res.json()
 })
+
+// Danh sách form của user — server fetch lần đầu cho dashboard (hybrid).
+// no-store: user thêm/xóa form liên tục nên cần fresh. Kết quả truyền xuống làm
+// initialData cho TanStack Query; client lo invalidate sau create/delete.
+export async function getForms(): Promise<FormSchema[]> {
+  const headersList = await headers()
+
+  const res = await fetch(`${API_URL}/api/forms`, {
+    headers: { cookie: headersList.get('cookie') ?? '' },
+    cache: 'no-store',
+  })
+
+  if (!res.ok) throw new Error(`getForms failed: ${res.status}`)
+  return res.json()
+}

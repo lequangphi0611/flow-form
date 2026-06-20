@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
+import type { FormSchema } from '@flowform/types'
 import { formKeys } from '@/lib/query-keys'
 import { useFormList } from '@/hooks/forms/useFormList'
 import { useDeleteForm } from '@/hooks/forms/useDeleteForm'
@@ -15,12 +16,17 @@ import { FormListSkeleton } from '../FormListSkeleton'
 import { DeleteFormDialog } from '../DeleteFormDialog'
 import { CreateFormButton } from '../CreateFormButton'
 
-export function FormListContainer() {
+interface FormListContainerProps {
+  userId: string
+  initialForms: FormSchema[]
+}
+
+export function FormListContainer({ userId, initialForms }: FormListContainerProps) {
   const router = useRouter()
   const queryClient = useQueryClient()
   const [deletingFormId, setDeletingFormId] = useState<string | null>(null)
 
-  const { data: forms = [], isLoading, isError } = useFormList()
+  const { data: forms = [], isLoading, isError } = useFormList(userId, initialForms)
 
   const { mutate: deleteForm, isPending: isDeleting } = useDeleteForm({
     onSuccess: () => {
