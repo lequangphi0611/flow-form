@@ -54,10 +54,17 @@ Server fetch lần đầu → đưa data sang client. Hai biến thể:
 Quy tắc Hybrid:
 - Đường **đọc** đi qua server. Client **không** tự fetch lại cùng data đó → tránh double
   fetch + double source-of-truth.
-- **`initialData` PHẢI đi kèm `staleTime` > 0.** `initialData` không ngăn refetch — với
-  `staleTime` mặc định `0`, data bị coi là stale ngay và `useQuery` **refetch nền khi
-  mount** → double fetch (server + client). Đặt `staleTime` để initialData được coi là
-  fresh; mutation vẫn `invalidateQueries` tường minh nên data vẫn cập nhật.
+- **`initialData` PHẢI đi kèm `staleTime` > 0 + `refetchOnMount: false`.** `initialData`
+  không ngăn refetch — với `staleTime` mặc định `0`, data bị coi là stale ngay và `useQuery`
+  **refetch nền khi mount** → double fetch (server + client). `staleTime` cho initialData
+  được coi là fresh; `refetchOnMount: false` chặn hẳn cú fetch lúc mount bất kể stale.
+  Mutation vẫn `invalidateQueries` tường minh nên data vẫn cập nhật.
+  - **Không** dùng `enabled: false` để chặn (query disabled sẽ **không** refetch sau
+    invalidate → mutation không cập nhật được).
+  - **Tránh** `staleTime: Infinity`: khi soft-nav rời rồi quay lại trong `gcTime`, cache cũ
+    còn nên `initialData` mới bị bỏ qua → hiện data cũ vĩnh viễn (chỉ invalidate mới sửa).
+  - Cần "client không bao giờ fetch đường đọc" làm nguyên tắc cứng → dùng
+    `HydrationBoundary` + `dehydrate` (server seed lại cache mỗi nav) thay cho `initialData`.
 - Auth-protected list thuộc user + có mutation cùng trang → **Hybrid** (không pure-client:
   server đã có cookie, không cần chờ client lấy session rồi mới lấy list).
 
@@ -140,7 +147,7 @@ export default async function FormsPage() {
 - [ ] Mặc định **Server**; chỉ rời Server khi có lý do (mutation cùng trang / tương tác / realtime / Zustand editor)
 - [ ] Server → `lib/data` (rule 11) + cache strategy tường minh (rule 10)
 - [ ] Hybrid → server fetch + `initialData` cho `useQuery` (hoặc seed Zustand); client không fetch lại đường đọc
-- [ ] Hybrid `initialData` đi kèm `staleTime` > 0 → không refetch nền khi mount (tránh double fetch)
+- [ ] Hybrid `initialData` đi kèm `staleTime` > 0 **và** `refetchOnMount: false` → không fetch lúc mount (tránh double fetch); không dùng `enabled: false` hay `staleTime: Infinity`
 - [ ] Client → `lib/api` + custom hook (rule 04); chỉ cho data phụ thuộc tương tác
 - [ ] Không client-fetch dữ liệu đã có sẵn lúc render đầu (không tạo waterfall/skeleton thừa)
 - [ ] Server/Hybrid: tách async Server Component con + `<Suspense fallback={<Skeleton/>}>`, không `await` block cả trang trong `page.tsx`

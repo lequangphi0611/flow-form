@@ -17,5 +17,8 @@ export function useFormList(userId: string, initialForms: FormSchema[]) {
     queryFn: formsApi.list,
     initialData: initialForms,
     staleTime: FORMS_STALE_TIME_MS,
+    // Chặn hẳn fetch lúc mount (đã có initialData từ server) — không double fetch.
+    // Create/delete vẫn invalidate nên list vẫn cập nhật; focus sau khi stale vẫn refetch.
+    refetchOnMount: false,
   })
 }
