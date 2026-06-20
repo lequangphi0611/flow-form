@@ -36,10 +36,11 @@ export const formsApi = {
     }).then(handleResponse<FormSchema>)
   },
 
-  updateSchema(id: string, dto: UpdateFormDto): Promise<FormSchema> {
+  updateSchema(id: string, dto: UpdateFormDto, { keepalive = false }: { keepalive?: boolean } = {}): Promise<FormSchema> {
     return fetch(`${API_URL}/api/forms/${id}`, {
       method: 'PATCH',
       credentials: 'include',
+      keepalive,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(dto),
     }).then(handleResponse<FormSchema>)
