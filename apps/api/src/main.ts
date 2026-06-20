@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core'
 import { AppModule } from './app.module'
 import { getAuth } from './modules/auth/auth.config'
 import { ValidationPipe } from '@nestjs/common'
+import { HttpExceptionFilter } from './common/filters/http-exception.filter'
 
 const _esmImport = new Function('id', 'return import(id)') as (id: string) => Promise<any>
 
@@ -19,6 +20,7 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api')
   app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }))
+  app.useGlobalFilters(new HttpExceptionFilter())
 
   await app.listen(process.env.PORT ?? 3001)
   console.log(`API running on http://localhost:${process.env.PORT ?? 3001}`)
