@@ -12,7 +12,6 @@ import { useDeleteForm } from '@/hooks/forms/useDeleteForm'
 import { EmptyState } from '@/components/common/EmptyState'
 
 import { FormList } from './FormList'
-import { FormListSkeleton } from '../FormListSkeleton'
 import { DeleteFormDialog } from '../DeleteFormDialog'
 import { CreateFormButton } from '../CreateFormButton'
 
@@ -26,7 +25,9 @@ export function FormListContainer({ userId, initialForms }: FormListContainerPro
   const queryClient = useQueryClient()
   const [deletingFormId, setDeletingFormId] = useState<string | null>(null)
 
-  const { data: forms = [], isLoading, isError } = useFormList(userId, initialForms)
+  // initialData từ server → không có trạng thái loading ở client; skeleton do
+  // <Suspense> ở page lo. Chỉ còn xử lý error (refetch nền lỗi) và empty.
+  const { data: forms = [], isError } = useFormList(userId, initialForms)
 
   const { mutate: deleteForm, isPending: isDeleting } = useDeleteForm({
     onSuccess: () => {
@@ -42,8 +43,6 @@ export function FormListContainer({ userId, initialForms }: FormListContainerPro
   })
 
   const deletingForm = forms.find((f) => f.id === deletingFormId)
-
-  if (isLoading) return <FormListSkeleton />
 
   if (isError) {
     return (
