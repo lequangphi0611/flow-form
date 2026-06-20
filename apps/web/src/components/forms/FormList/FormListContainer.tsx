@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
@@ -21,7 +20,6 @@ interface FormListContainerProps {
 }
 
 export function FormListContainer({ userId, initialForms }: FormListContainerProps) {
-  const router = useRouter()
   const queryClient = useQueryClient()
   const [deletingFormId, setDeletingFormId] = useState<string | null>(null)
 
@@ -73,12 +71,7 @@ export function FormListContainer({ userId, initialForms }: FormListContainerPro
 
   return (
     <>
-      <FormList
-        forms={forms}
-        onDelete={(id) => setDeletingFormId(id)}
-        onEdit={(id) => router.push(`/forms/${id}/builder`)}
-        onViewResponses={(id) => router.push(`/forms/${id}/analytics`)}
-      />
+      <FormList forms={forms} onDelete={(id) => setDeletingFormId(id)} />
       {deletingForm && (
         <DeleteFormDialog
           formTitle={deletingForm.title}
