@@ -132,8 +132,9 @@ Dựa trên wireframe ở Step 4 và fetch strategy ở Step 3, tạo plan theo 
 ## Plan: {US-id} — {Tên ngắn}
 
 ### Files to create
-- `apps/web/src/components/[feature]/[Name].tsx` — [Atom/Molecule/Organism — mô tả]
-- `apps/web/src/components/[feature]/containers/[Name]Container.tsx` — [nếu cần]
+- `apps/web/src/components/[feature]/[Name]/[Name].tsx` — [Presenter — mô tả]
+- `apps/web/src/components/[feature]/[Name]/[Name]Container.tsx` — [Container — nếu có side effect]
+- `apps/web/src/components/[feature]/[Name]/index.ts` — [entry point export]
 - `apps/web/src/hooks/[entity]/use[Name].ts` — [useQuery/useMutation hook]
 
 ### Files to modify
@@ -166,8 +167,9 @@ Dựa trên wireframe ở Step 4 và fetch strategy ở Step 3, tạo plan theo 
 - [ ] Fetch strategy đã được quyết định: Server / Client / Hybrid cho từng data (Step 3)
 - [ ] Server fetch → hàm trong `lib/data/`, Client fetch → hàm trong `lib/api/` (rule 11)
 - [ ] Hybrid: server fetcher dùng `React.cache()`, client hook nhận `initialData` nếu cần (rule 10, 11)
-- [ ] Component có side effect → tách Container/Presenter (rule 08)
-- [ ] Component mới đặt đúng thư mục (rule 09)
+- [ ] Mỗi Organism có folder riêng: `[Name]/[Name].tsx` + `index.ts` (rule 08, 09)
+- [ ] Component có side effect → thêm `[Name]Container.tsx` vào cùng folder (rule 08)
+- [ ] `index.ts` export Container nếu có, export Presenter nếu không (rule 08)
 - [ ] useQuery/useMutation nằm trong custom hook (rule 04)
 - [ ] Không gọi fetch() trực tiếp trong component (rule 11)
 - [ ] Không có `any`, không có `console.log`
