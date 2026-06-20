@@ -43,7 +43,7 @@
 | | Thư viện | Dùng cho |
 |---|---|---|
 | Framework | Next.js 15 (App Router) | Routing, SSR cho public form, layout |
-| UI | shadcn/ui + Tailwind CSS v4 | Components, styling |
+| UI | shadcn/ui + Tailwind CSS v4 | Components, styling — dùng `asChild`, KHÔNG dùng `render` prop |
 | State | Zustand + Immer | Builder state (steps, fields, logic) |
 | DnD | dnd-kit | Drag & drop trong Builder |
 | Form | React Hook Form + Zod | Wizard renderer — validate từng step |
@@ -67,9 +67,13 @@ src/
 │   │   └── forms/[id]/analytics/page.tsx
 │   └── f/[formId]/page.tsx   ← Public form — SSR
 ├── components/
-│   ├── ui/                   ← ATOM: shadcn primitives (Button, Input, Label...)
+│   ├── ui/                   ← ATOM: shadcn/ui generated — KHÔNG EDIT trực tiếp
 │   ├── common/               ← MOLECULE: tổ hợp atoms dùng chung (FormField, EmptyState...)
-│   ├── auth/                 ← ORGANISM: components của feature auth
+│   ├── auth/                 ← ORGANISM: mỗi component nhóm trong folder riêng
+│   │   └── LoginForm/        ←   ví dụ folder
+│   │       ├── LoginForm.tsx           (Presenter)
+│   │       ├── LoginFormContainer.tsx  (Container — nếu có side effect)
+│   │       └── index.ts               (entry point)
 │   ├── forms/                ← ORGANISM: components của feature quản lý form
 │   ├── builder/              ← ORGANISM: components của feature builder
 │   ├── analytics/            ← ORGANISM: components của feature analytics
@@ -90,15 +94,18 @@ src/
 
 Trước khi viết JSX của bất kỳ component nào, kiểm tra: component này có dùng `useQuery`, `useMutation`, `useSession`, `useBuilderStore`, `signIn`, `signUp`, `signOut`, `router.push`, hay `useEffect` gọi API không?
 
-- **Có** → phải tách thành 2 file:
-  - `components/[feature]/containers/[Name]Container.tsx` — chỉ fetch/mutate/điều hướng, truyền kết quả xuống Presenter qua props
-  - `components/[feature]/[Name].tsx` — chỉ nhận props và render JSX, không biết API/store tồn tại
-- **Không** → đây là Presenter thuần, viết trực tiếp
+- **Có** → tạo folder `components/[feature]/[Name]/` chứa 3 file:
+  - `[Name]Container.tsx` — chỉ fetch/mutate/điều hướng, truyền kết quả xuống Presenter qua props
+  - `[Name].tsx` — chỉ nhận props và render JSX, không biết API/store tồn tại
+  - `index.ts` — export Container làm entry point
+- **Không** → tạo folder `components/[feature]/[Name]/` chứa 2 file: `[Name].tsx` + `index.ts`
 
 **Ví dụ auth form đúng:**
 ```
-components/auth/containers/RegisterContainer.tsx  ← gọi signUp.email(), router.push()
-components/auth/RegisterForm.tsx                  ← nhận { isPending, onSubmit } qua props
+components/auth/RegisterForm/
+├── RegisterForm.tsx              ← nhận { isPending, onSubmit } qua props
+├── RegisterFormContainer.tsx     ← gọi signUp.email(), router.push()
+└── index.ts                      ← export { RegisterFormContainer }
 ```
 
 Đọc [`rules/frontend/08-presenter-container.md`](../../rules/frontend/08-presenter-container.md) để xem ví dụ đầy đủ.
@@ -109,14 +116,14 @@ components/auth/RegisterForm.tsx                  ← nhận { isPending, onSubm
 
 Mỗi khi tạo component mới, trả lời theo thứ tự:
 
-1. **Có phải shadcn primitive?** → `components/ui/` (Atom — do `npx shadcn` generate, không tự tạo)
+1. **Có phải shadcn primitive?** → `components/ui/` (Atom — thêm qua `npx shadcn@latest add`)
 2. **Dùng được ở nhiều feature, không fetch, không đọc store?** → `components/common/` (Molecule)
-3. **Gắn với 1 feature cụ thể?** → `components/[feature]/` (Organism)
-   - auth form → `components/auth/`
-   - form list/card → `components/forms/`
-   - drag & drop canvas → `components/builder/`
-   - charts, stats → `components/analytics/`
-4. **Cần fetch hoặc kết nối Zustand store?** → `components/[feature]/containers/` (Container)
+3. **Gắn với 1 feature cụ thể?** → `components/[feature]/[Name]/` (Organism — folder riêng)
+   - auth form → `components/auth/LoginForm/`
+   - form list/card → `components/forms/FormList/`, `components/forms/FormCard/`
+   - drag & drop canvas → `components/builder/FieldPanel/`
+   - charts, stats → `components/analytics/FunnelChart/`
+4. **Cần fetch hoặc kết nối Zustand store?** → thêm `[Name]Container.tsx` vào cùng folder (xem rule 08)
 5. **Là entry point của route?** → `app/**/page.tsx` (Page — không chứa logic phức tạp)
 
 **Không bao giờ đặt component vào `app/**/[route]/_components/`** trừ khi component đó chỉ dùng đúng 1 lần tại route đó VÀ không thể tái sử dụng. Ngay cả khi đó, ưu tiên đặt vào `components/[feature]/` trước.
@@ -163,15 +170,14 @@ Mỗi khi tạo component mới, trả lời theo thứ tự:
 - Client Components: dùng TanStack Query hooks
 - Public form page (`f/[formId]`): fetch ở Server Component, pass xuống client
 
-### shadcn/ui setup
-Chạy lần đầu để khởi tạo shadcn:
+### Thêm UI primitive mới
+
+Chạy shadcn CLI từ `apps/web/`:
 ```bash
-npx shadcn@latest init
+npx shadcn@latest add tooltip
+npx shadcn@latest add popover
 ```
-Thêm component:
-```bash
-npx shadcn@latest add button input dialog
-```
+Không tự viết wrapper từ raw HTML hay Radix primitives trực tiếp.
 
 ### Thêm thư viện mới
 Chỉ thêm vào `apps/web/package.json`, không phải root.

@@ -16,7 +16,7 @@
 | ORM | Prisma 6 | Type-safe DB access, migrations |
 | Auth | Better Auth | Email/password, session DB |
 | Jobs | pg-boss | Async jobs trên PostgreSQL (export CSV) |
-| Storage | Cloudflare R2 (AWS SDK) | File đính kèm trong form |
+| Storage | Supabase Storage (@supabase/supabase-js) | File đính kèm — proxy upload qua NestJS |
 
 ---
 
@@ -36,7 +36,7 @@ src/
     ├── forms/                ← CRUD form schema
     ├── responses/            ← Submit + draft + list responses
     ├── analytics/            ← Track events + funnel query
-    ├── storage/              ← Presigned URL cho R2 upload
+    ├── storage/              ← Proxy upload lên Supabase Storage
     └── jobs/                 ← pg-boss job queue
 ```
 
@@ -64,9 +64,12 @@ src/
 - Gửi job qua `JobsService.enqueueExportCsv(formId)`
 - pg-boss tự tạo bảng `pgboss.*` trong cùng PostgreSQL database
 
-### Storage (R2)
-- Không upload file qua NestJS server — dùng **presigned URL**
-- Flow: client request URL → R2 upload trực tiếp → client gửi public URL về API
+### Storage (Supabase)
+- Client POST `multipart/form-data` đến `POST /api/storage/upload`
+- NestJS dùng Multer (memory storage) để buffer file, upload lên Supabase Storage qua `@supabase/supabase-js`
+- Sau khi upload: gọi `getPublicUrl()` → lưu `FileAttachment` record → trả `{ publicUrl, fileKey }`
+- Flow 1 bước: client upload → nhận URL ngay, không cần presign hay confirm riêng
+- Bucket phải được cấu hình **Public** trên Supabase Dashboard
 
 ---
 
@@ -100,7 +103,7 @@ cd apps/api && npm run build
 - [`05 — Auth Guard & Ownership Check Pattern`](../../rules/api/05-auth-guard.md) — AuthGuard (Better Auth session), FormOwnerGuard (DB ownership check), @CurrentUser() decorator, guard ordering, rate limiting
 - [`06 — Prisma Patterns`](../../rules/api/06-prisma-patterns.md) — PrismaService DI only, select vs include, JSONB hydration với Zod, transactions, raw queries an toàn với Prisma.sql
 - [`07 — pg-boss Job Patterns`](../../rules/api/07-pgboss-job-patterns.md) — Async jobs qua pg-boss, job name constants, register trong onModuleInit, payload validation, idempotent handlers
-- [`08 — Storage & R2 Upload Patterns`](../../rules/api/08-storage-r2-patterns.md) — Presigned URL flow 3 bước, 10MB limit, 15min expiry, MIME allowlist, DB record chỉ tạo sau confirm
+- [`08 — Storage & Supabase Upload Patterns`](../../rules/api/08-storage-supabase-patterns.md) — Proxy upload qua NestJS, Multer 10MB limit, MIME allowlist, supabase-js upload + getPublicUrl(), FileAttachment record tạo ngay sau upload
 - [`09 — Config & Environment Variable Patterns`](../../rules/api/09-config-env-patterns.md) — ConfigService thay vì process.env, Zod env schema validate lúc startup, getOrThrow cho required vars
 - [`Shared 03 — Clean Code`](../../rules/shared/03-clean-code.md) — Function design, naming (is/has/SCREAMING_SNAKE), no magic values, no dead code/any
 
@@ -123,3 +126,4 @@ cd apps/api && npm run build
 | `POST` | `/api/forms/:id/analytics/events` | Track step event |
 | `GET` | `/api/forms/:id/analytics/funnel` | Funnel data |
 | `GET` | `/api/forms/:id/analytics/summary` | Tổng hợp stats |
+| `POST` | `/api/storage/upload` | Upload file đính kèm (multipart/form-data) → `{ publicUrl, fileKey }` |

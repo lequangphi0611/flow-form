@@ -51,9 +51,11 @@ export function BuilderShell({ initialForm }: { initialForm: FormSchema }) {
 }
 
 // 3. Component đọc từ store với selector
+const EMPTY_STEPS: Step[] = []  // module-level constant — tránh tạo [] mới mỗi render
+
 export function StepListPanel() {
-  const steps = useBuilderStore((s) => s.form?.steps ?? [])
-  return <ul>{steps.map((step) => <StepCard key={step.id} step={step} />)}</ul>
+  const steps = useBuilderStore((s) => s.form?.steps ?? EMPTY_STEPS)
+  return <ul>{steps.map((step) => <StepItem key={step.id} stepId={step.id} />)}</ul>
 }
 ```
 
@@ -126,8 +128,10 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { useBuilderStore } from '@/store/builder.store'
 import { SortableStepCard } from './SortableStepCard'
 
+const EMPTY_STEPS: Step[] = []
+
 export function StepListPanel() {
-  const steps = useBuilderStore((s) => s.form?.steps ?? [])
+  const steps = useBuilderStore((s) => s.form?.steps ?? EMPTY_STEPS)
   const stepIds = steps.map((s) => s.id)  // SortableContext cần array of IDs
 
   return (
@@ -147,6 +151,8 @@ export function StepListPanel() {
 ## 3. Drag types — phân biệt STEP vs FIELD
 
 Dùng `data` attribute trong `useSortable` để phân biệt loại drag item.
+
+> **Lưu ý §3 vs §4:** Các `SortableStepCard`/`SortableFieldCard` trong §3 nhận full object (`step`, `field`) vì cần truyền vào `data` của `useSortable` cho hệ thống DnD. Tuy nhiên, selection và mutation vẫn đi qua store actions — KHÔNG dùng callback prop từ parent. §4 mô tả pattern tổng quát hơn: list items thông thường (không cần dnd data) chỉ nhận IDs.
 
 ```tsx
 // ✅ — SortableStepCard: STEP drag
@@ -219,7 +225,92 @@ export function SortableFieldCard({ field, index }: { field: FieldSchema; index:
 
 ---
 
-## 4. Không mutate store trực tiếp trong component
+## 4. List items trong Builder — Container (memo) + Presenter
+
+List items vẫn tuân theo pattern Container/Presenter (rule 08), nhưng `memo` đặt ở **Container**, không phải Presenter.
+
+**Nguyên tắc bất biến:** Parent trong `.map()` chỉ truyền IDs — không truyền callbacks, không truyền full object.
+
+```tsx
+// ❌ — Parent tạo inline callbacks → memo vô nghĩa
+{fields.map((field) => (
+  <FieldCard
+    key={field.id}
+    field={field}
+    onUpdate={(updates) => updateField(stepId, field.id, updates)}  // ← new ref mỗi render
+    onDelete={() => removeField(stepId, field.id)}                   // ← new ref mỗi render
+  />
+))}
+
+// ✅ — Parent chỉ pass IDs → Container tự lo phần còn lại
+{fields.map((field) => (
+  <FieldCardContainer key={field.id} stepId={stepId} fieldId={field.id} />
+))}
+```
+
+```tsx
+// ✅ — FieldCardContainer: memo + đọc store + dispatch
+// src/components/builder/FieldCard/FieldCardContainer.tsx
+export const FieldCardContainer = memo(function FieldCardContainer({
+  stepId,
+  fieldId,
+}: {
+  stepId: string
+  fieldId: string
+}) {
+  const field = useBuilderStore((s) =>
+    s.form?.steps.find((st) => st.id === stepId)?.fields.find((f) => f.id === fieldId)
+  )
+  const updateField = useBuilderStore((s) => s.updateField)
+  const removeField = useBuilderStore((s) => s.removeField)
+
+  if (!field) return null
+
+  return (
+    <FieldCard
+      field={field}
+      onUpdate={(updates) => updateField(stepId, fieldId, updates)}
+      onDelete={() => removeField(stepId, fieldId)}
+    />
+  )
+})
+```
+
+```tsx
+// ✅ — FieldCard: Presenter thuần — nhận props, không biết store tồn tại
+// src/components/builder/FieldCard/FieldCard.tsx
+interface FieldCardProps {
+  field: FieldSchema
+  onUpdate: (updates: Partial<FieldSchema>) => void
+  onDelete: () => void
+}
+
+export function FieldCard({ field, onUpdate, onDelete }: FieldCardProps) {
+  return (
+    <div>
+      <input
+        value={field.label}
+        onChange={(e) => onUpdate({ label: e.target.value })}
+      />
+      <button onClick={onDelete}>Xóa</button>
+    </div>
+  )
+}
+```
+
+**Tại sao memo hoạt động ở Container:**
+- Selector Zustand trả về cùng reference khi `field` đó không đổi → Container không re-render
+- Inline arrows bên trong Container (không phải trong `.map()`) không phá vỡ memo
+- Store actions (`updateField`, `removeField`) là stable refs — Zustand đảm bảo
+
+**Quy tắc:**
+- Parent trong `.map()` truyền **`(entityId)` hoặc `(parentId, entityId)`** — không callbacks, không full object
+- `memo` đặt ở **Container**, không phải Presenter
+- Presenter hoàn toàn thuần — dễ test, dễ Storybook
+
+---
+
+## 5. Không mutate store trực tiếp trong component
 
 ```tsx
 // ❌ — Mutate store trực tiếp trong component
@@ -253,7 +344,7 @@ export function StepCard({ step }: { step: StepSchema }) {
 
 ---
 
-## 5. Canvas — chỉ render, không chứa logic
+## 6. Canvas — chỉ render, không chứa logic
 
 Canvas (center panel) là nơi hiển thị preview form đang được build. Component này:
 - Chỉ đọc từ store để render
@@ -317,7 +408,7 @@ export function Canvas() {
 
 ---
 
-## 6. Auto-save — debounce 1 giây
+## 7. Auto-save — debounce 1 giây
 
 ```tsx
 // ✅ — src/hooks/useAutoSave.ts
@@ -336,13 +427,13 @@ export function useAutoSave(formId: string) {
   const isFirstRender = useRef(true)
 
   useEffect(() => {
-    // Bỏ qua lần đầu render (khi setForm() được gọi để khởi tạo)
+    if (!form) return  // guard trước — form null khi chưa load xong
+
+    // Bỏ qua lần đầu form có giá trị (khi setForm() được gọi để khởi tạo)
     if (isFirstRender.current) {
       isFirstRender.current = false
       return
     }
-
-    if (!form) return
 
     // Clear debounce timer trước đó
     if (timeoutRef.current) clearTimeout(timeoutRef.current)
@@ -395,7 +486,7 @@ export function FieldSettingsPanel() {
 
 ---
 
-## 7. Selection — chỉ dùng store actions
+## 8. Selection — chỉ dùng store actions
 
 ```tsx
 // ✅ — Click step → gọi selectStep() từ store

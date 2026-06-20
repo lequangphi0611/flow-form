@@ -36,8 +36,8 @@ export type CreateFormDto = z.infer<typeof createFormSchema>
 | `updateFormSchema` | Builder auto-save | PATCH /api/forms/:id |
 | `formSchemaValidator` | Builder save validation | Repository hydrate JSONB |
 | `paginationSchema` | Forms list query params | GET /api/forms |
-| `presignRequestSchema` | File upload UI | POST /api/storage/presign |
-| `confirmUploadSchema` | File upload confirm | POST /api/storage/confirm |
+| `uploadResponseSchema` | Parse upload response | POST /api/storage/upload response |
+| `ALLOWED_MIME_TYPES` | File input accept attr | Multer fileFilter reference |
 | `createSubmissionSchema` | Wizard submit | POST /api/forms/:id/responses |
 
 ---

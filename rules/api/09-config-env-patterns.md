@@ -38,11 +38,10 @@ const envSchema = z.object({
   BETTER_AUTH_SECRET: z.string().min(32),
   BETTER_AUTH_URL: z.string().url(),
 
-  // Cloudflare R2
-  R2_ENDPOINT: z.string().url(),
-  R2_ACCESS_KEY_ID: z.string().min(1),
-  R2_SECRET_ACCESS_KEY: z.string().min(1),
-  R2_BUCKET_NAME: z.string().min(1),
+  // Supabase Storage (Free tier)
+  SUPABASE_URL: z.string().url(),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
+  SUPABASE_STORAGE_BUCKET: z.string().min(1),
 
   // Frontend URL (for CORS)
   FRONTEND_URL: z.string().url(),
@@ -199,5 +198,5 @@ export class AppModule {}
 
 - The frontend (`apps/web`) uses Next.js env variables (`NEXT_PUBLIC_*` for client, plain vars for server). Different mechanism, same principle: validate at startup using Zod in `src/lib/env.ts`.
 - The embed widget (`apps/embed`) does not read env vars -- the `apiUrl` is passed in at runtime by the host page.
-- Rule 08 (Storage R2 Patterns) depends on this rule: `StorageService` reads R2 credentials via `ConfigService`.
+- Rule 08 (Storage Supabase Patterns) depends on this rule: `StorageService` reads Supabase credentials via `ConfigService`.
 - Rule 07 (pg-boss Job Patterns) depends on this rule: `PgBossService` reads `DATABASE_URL` via `ConfigService`.

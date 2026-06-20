@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common'
+import { Prisma } from '@prisma/client'
 import { PrismaService } from '../../prisma/prisma.service'
 import type { SubmitResponseDto, SaveDraftResponseDto } from '@flowform/validators'
 
@@ -11,7 +12,7 @@ export class ResponsesService {
       data: {
         formId,
         sessionId: dto.sessionId ?? crypto.randomUUID(),
-        data: dto.data,
+        data: dto.data as unknown as Prisma.InputJsonValue,
         completedAt: new Date(),
       },
     })
@@ -23,9 +24,9 @@ export class ResponsesService {
       create: {
         formId,
         sessionId: dto.sessionId ?? crypto.randomUUID(),
-        data: dto.data,
+        data: dto.data as unknown as Prisma.InputJsonValue,
       },
-      update: { data: dto.data },
+      update: { data: dto.data as unknown as Prisma.InputJsonValue },
     })
   }
 

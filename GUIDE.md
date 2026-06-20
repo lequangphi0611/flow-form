@@ -30,20 +30,23 @@ npm -v
 
 ---
 
-## 3. Cloudflare R2 — File storage miễn phí
+## 3. Supabase Storage — File storage miễn phí
 
 > Bỏ qua bước này nếu chưa cần tính năng upload file. App vẫn chạy được.
 
-1. Tạo tài khoản tại [cloudflare.com](https://cloudflare.com) (free)
-2. Vào **R2 Object Storage → Create bucket** → đặt tên `flowform`
-3. Vào **Manage R2 API Tokens → Create API Token**
-   - Permissions: `Object Read & Write`
-   - Scope: `Specific bucket → flowform`
-4. Lưu lại:
-   - `Account ID` (góc phải dashboard)
-   - `Access Key ID`
-   - `Secret Access Key`
-5. Để public URL: vào bucket → **Settings → Public Access** → bật và copy domain
+> **Free tier** — 1 GB storage, 2 GB/tháng bandwidth, không cần credit card.
+
+1. Tạo tài khoản tại [supabase.com](https://supabase.com) → **New project** → đặt tên `flowform`
+   - Chọn region gần nhất (Singapore)
+   - Đặt Database Password (lưu lại, dùng sau)
+2. Đợi project khởi tạo (~2 phút), sau đó vào **Project Settings → API** và lưu lại:
+   - **Project URL** → `SUPABASE_URL`
+   - **`service_role`** key (mục *Project API Keys*) → `SUPABASE_SERVICE_ROLE_KEY`
+3. Vào **Storage → New bucket**:
+   - Đặt tên bucket (ví dụ: `uploads`)
+   - Bật **Public bucket** → **Save**
+
+> **Lưu ý:** Bucket phải là **Public** để `getPublicUrl()` trả về URL trực tiếp mà không cần signed URL.
 
 ---
 
@@ -69,12 +72,10 @@ BETTER_AUTH_SECRET="..."
 BETTER_AUTH_URL="http://localhost:3001"
 FRONTEND_URL="http://localhost:3000"
 
-# Từ bước 3 (để trống nếu bỏ qua bước 3)
-CLOUDFLARE_R2_ACCOUNT_ID=""
-CLOUDFLARE_R2_ACCESS_KEY_ID=""
-CLOUDFLARE_R2_SECRET_ACCESS_KEY=""
-CLOUDFLARE_R2_BUCKET_NAME="flowform"
-CLOUDFLARE_R2_PUBLIC_URL=""
+# Từ bước 3 (để trống nếu bỏ qua bước 3 — app vẫn chạy, chỉ mất tính năng upload)
+SUPABASE_URL=""
+SUPABASE_SERVICE_ROLE_KEY=""
+SUPABASE_STORAGE_BUCKET="uploads"
 ```
 
 > **Tạo BETTER_AUTH_SECRET trên Windows (không có openssl):**
@@ -207,7 +208,7 @@ cd apps/embed && npm run build
 | `apps/web` | Vercel | Connect GitHub repo, auto-detect Next.js |
 | `apps/api` | Render | Web Service, Node runtime, port 3001 |
 | Database | Neon | Dùng production branch thay vì main |
-| File storage | Cloudflare R2 | Đã setup ở bước 3 |
+| File storage | Supabase Storage (Free) | Đã setup ở bước 3 — dùng SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY |
 | Keep-alive | UptimeRobot | Monitor URL `https://your-api.render.com/api`, interval 5 phút |
 
 > **Biến môi trường khi deploy:** Điền vào Vercel Dashboard và Render Dashboard thay vì file `.env`.

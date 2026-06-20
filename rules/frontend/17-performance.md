@@ -166,7 +166,9 @@ const BuilderDndProvider = dynamic(
 
 ## 5. Selector Zustand — tránh re-render thừa
 
-> Đã có trong rule `03-state.md` — nhắc lại vì liên quan trực tiếp đến performance Builder.
+Selector cụ thể + Immer structural sharing đảm bảo chỉ component thực sự cần re-render mới re-render.
+
+### 5a. Selector primitive — không lấy toàn bộ store
 
 ```tsx
 // ✅ — Selector cụ thể → chỉ re-render khi selectedStepId thay đổi
@@ -175,6 +177,56 @@ const isSelected = useBuilderStore((s) => s.selectedStepId === step.id)
 // ❌ — Lấy toàn bộ store → re-render khi bất kỳ state nào thay đổi
 const store = useBuilderStore()
 ```
+
+### 5b. Fallback array — dùng stable reference, không dùng `?? []`
+
+`?? []` tạo array literal mới mỗi lần selector chạy → Zustand's `Object.is` fail → re-render không cần thiết.
+
+```tsx
+// ❌ — Tạo new [] mỗi lần khi form là null → re-render khi bất kỳ store state nào thay đổi
+const steps = useBuilderStore((s) => s.form?.steps ?? [])
+
+// ✅ — Stable reference → Object.is check pass → không re-render thừa
+const EMPTY_STEPS: Step[] = []  // module-level constant
+
+export function StepListContainer() {
+  const steps = useBuilderStore((s) => s.form?.steps ?? EMPTY_STEPS)
+}
+```
+
+**Quy tắc:** Mọi `?? fallback` trong Zustand selector phải dùng module-level constant nếu fallback là object hoặc array.
+
+### 5c. List item — đọc từ store trực tiếp trong memo'd component
+
+Builder list items (StepItem, FieldCard) phải đọc state của mình trực tiếp từ store thay vì nhận qua props từ parent. Đây là cách duy nhất để memo hoạt động hiệu quả khi store thay đổi thường xuyên.
+
+```tsx
+// ❌ — Props từ parent tạo mới mỗi render → memo vô nghĩa
+export const StepCard = memo(function StepCard({
+  step,
+  isActive,
+  onSelect,  // ← new function reference mỗi render khi parent re-render
+}: StepCardProps) {
+  return <div onClick={onSelect}>{step.title}</div>
+})
+
+// ✅ — Đọc từ store → chỉ re-render khi đúng field này thay đổi
+export const StepItem = memo(function StepItem({ id, index }: { id: string; index: number }) {
+  const title = useBuilderStore((s) => s.form?.steps.find((st) => st.id === id)?.title ?? '')
+  const isActive = useBuilderStore((s) => s.selectedStepId === id)
+  const selectStep = useBuilderStore((s) => s.selectStep)  // stable store action
+
+  return (
+    <div onClick={() => selectStep(id)} data-active={isActive}>
+      {index + 1}. {title}
+    </div>
+  )
+})
+```
+
+**Tại sao hoạt động với Immer:** Immer dùng structural sharing — khi step A thay đổi, step B vẫn giữ reference cũ → selector của StepItem(B) trả về cùng reference → `Object.is` = true → không re-render.
+
+**Store actions là stable:** Zustand đảm bảo action functions (`selectStep`, `renameStep`, etc.) không thay đổi reference giữa các renders — không cần `useCallback` cho store actions.
 
 ---
 

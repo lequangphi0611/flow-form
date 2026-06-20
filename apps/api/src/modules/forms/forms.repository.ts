@@ -31,6 +31,7 @@ export class FormsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async findByOwner(ownerId: string): Promise<FormSchema[]> {
+    if (!ownerId) return []
     const rows = (await this.prisma.form.findMany({
       where: { ownerId },
       orderBy: { updatedAt: 'desc' },

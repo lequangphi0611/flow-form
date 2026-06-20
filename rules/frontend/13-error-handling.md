@@ -158,7 +158,7 @@ Cài `sonner` để hiển thị toast. Đây là thư viện toast mặc địn
 ```bash
 # Cài sonner (1 lần duy nhất)
 npm install sonner --workspace=@flowform/web
-npx shadcn@latest add sonner
+npx shadcn add sonner
 ```
 
 ```tsx

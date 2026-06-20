@@ -3,7 +3,7 @@
   "private": true,
   "workspaces": ["apps/*", "packages/*"],
   "scripts": {
-    "dev": "turbo dev",
+    "dev": "turbo dev --log-order stream",
     "build": "turbo build",
     "lint": "turbo lint",
     "db:generate": "turbo db:generate",

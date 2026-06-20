@@ -7,6 +7,6 @@ import { FormOwnerGuard } from './guards/form-owner.guard'
 @Module({
   controllers: [FormsController],
   providers: [FormsService, FormsRepository, FormOwnerGuard],
-  exports: [FormsRepository],
+  exports: [FormsRepository, FormOwnerGuard],
 })
 export class FormsModule {}

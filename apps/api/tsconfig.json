@@ -7,8 +7,8 @@
     "removeComments": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
+    "rootDir": "../../",
     "outDir": "./dist",
-    "baseUrl": "./",
     "paths": {
       "@flowform/types": ["../../packages/types/src/index.ts"],
       "@flowform/validators": ["../../packages/validators/src/index.ts"]

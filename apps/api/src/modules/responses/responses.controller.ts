@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common'
 import { ResponsesService } from './responses.service'
 import { FormAccessGuard } from './guards/form-access.guard'
 import { AuthGuard } from '../../common/guards/auth.guard'
+import { FormOwnerGuard } from '../forms/guards/form-owner.guard'
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe'
 import { submitResponseSchema, saveDraftResponseSchema } from '@flowform/validators'
 import type { SubmitResponseDto, SaveDraftResponseDto } from '@flowform/validators'
@@ -30,9 +31,9 @@ export class ResponsesController {
     return this.responsesService.saveDraft(formId, dto)
   }
 
-  // Form owner views responses — auth required
+  // Form owner views responses — auth + ownership required
   @Get()
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, FormOwnerGuard)
   findAll(@Param('formId') formId: string) {
     return this.responsesService.findAll(formId)
   }

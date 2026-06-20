@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { formKeys } from '@/lib/query-keys'
 import { useFormList } from '@/hooks/forms/useFormList'
 import { useDeleteForm } from '@/hooks/forms/useDeleteForm'
@@ -20,7 +21,14 @@ export function FormListContainer() {
   const { data: forms = [], isLoading, isError } = useFormList()
 
   const { mutate: deleteForm, isPending: isDeleting } = useDeleteForm({
-    onSuccess: () => setDeletingFormId(null),
+    onSuccess: () => {
+      setDeletingFormId(null)
+      toast.success('Đã xóa form thành công')
+    },
+    onError: () => {
+      setDeletingFormId(null)
+      toast.error('Xóa form thất bại. Vui lòng thử lại.')
+    },
   })
 
   const deletingForm = forms.find((f) => f.id === deletingFormId)
@@ -35,7 +43,7 @@ export function FormListContainer() {
         action={
           <button
             className="text-sm text-blue-600 hover:underline"
-            onClick={() => queryClient.invalidateQueries({ queryKey: formKeys.all })}
+            onClick={() => queryClient.invalidateQueries({ queryKey: formKeys.root })}
           >
             Thử lại
           </button>

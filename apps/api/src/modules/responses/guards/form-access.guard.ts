@@ -14,7 +14,7 @@ export class FormAccessGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>()
-    const formId = request.params['formId']
+    const formId = request.params['formId'] as string
 
     const form = await this.formsRepository.findStatusById(formId)
 

@@ -1,32 +1,104 @@
-import { Injectable } from '@nestjs/common'
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
+import {
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+  UnsupportedMediaTypeException,
+} from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import { randomUUID } from 'crypto'
+import type { EnvConfig } from '../../config/env.schema'
+import { PrismaService } from '../../prisma/prisma.service'
+import { SUPABASE_CLIENT } from './storage.constants'
+
+const ALLOWED_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'application/pdf',
+])
+
+const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024
 
 @Injectable()
 export class StorageService {
-  private readonly s3 = new S3Client({
-    region: 'auto',
-    endpoint: `https://${process.env.CLOUDFLARE_R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-    credentials: {
-      accessKeyId: process.env.CLOUDFLARE_R2_ACCESS_KEY_ID!,
-      secretAccessKey: process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY!,
-    },
-  })
+  constructor(
+    @Inject(SUPABASE_CLIENT) private readonly supabase: SupabaseClient,
+    private readonly config: ConfigService<EnvConfig, true>,
+    private readonly prisma: PrismaService,
+  ) {}
 
-  private readonly bucket = process.env.CLOUDFLARE_R2_BUCKET_NAME!
+  async uploadFile(
+    buffer: Buffer,
+    originalName: string,
+    mimeType: string,
+    formId: string,
+    uploadedBy: string,
+  ) {
+    if (!ALLOWED_MIME_TYPES.has(mimeType)) {
+      throw new UnsupportedMediaTypeException({
+        type: 'https://flowform.dev/errors/unsupported-media-type',
+        title: 'Unsupported Media Type',
+        status: 415,
+        detail: `File type '${mimeType}' is not allowed. Allowed: ${[...ALLOWED_MIME_TYPES].join(', ')}`,
+      })
+    }
 
-  // Generate a presigned URL so clients upload directly to R2 (no server bandwidth)
-  async getUploadUrl(key: string, contentType: string) {
-    const command = new PutObjectCommand({
-      Bucket: this.bucket,
-      Key: key,
-      ContentType: contentType,
+    if (buffer.length > MAX_FILE_SIZE_BYTES) {
+      throw new UnsupportedMediaTypeException({
+        type: 'https://flowform.dev/errors/file-too-large',
+        title: 'File Too Large',
+        status: 413,
+        detail: 'File must not exceed 10MB',
+      })
+    }
+
+    const form = await this.prisma.form.findFirst({
+      where: { id: formId },
+      select: { id: true },
     })
-    const url = await getSignedUrl(this.s3, command, { expiresIn: 300 })
-    return { uploadUrl: url, publicUrl: `${process.env.CLOUDFLARE_R2_PUBLIC_URL}/${key}` }
+    if (!form) throw new NotFoundException(`Form '${formId}' not found`)
+
+    const sanitizedName = originalName.replace(/[^a-zA-Z0-9._-]/g, '_')
+    const fileKey = `forms/${formId}/attachments/${randomUUID()}-${sanitizedName}`
+    const bucket = this.config.getOrThrow('SUPABASE_STORAGE_BUCKET')
+
+    const { error } = await this.supabase.storage
+      .from(bucket)
+      .upload(fileKey, buffer, { contentType: mimeType, upsert: false })
+
+    if (error) {
+      throw new InternalServerErrorException({
+        type: 'https://flowform.dev/errors/storage-upload-failed',
+        title: 'Storage Upload Failed',
+        status: 500,
+        detail: error.message,
+      })
+    }
+
+    const {
+      data: { publicUrl },
+    } = this.supabase.storage.from(bucket).getPublicUrl(fileKey)
+
+    await this.prisma.fileAttachment.create({
+      data: {
+        formId,
+        fileKey,
+        filename: originalName,
+        mimeType,
+        size: buffer.length,
+        publicUrl,
+        uploadedBy,
+      },
+    })
+
+    return { publicUrl, fileKey }
   }
 
-  deleteFile(key: string) {
-    return this.s3.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }))
+  async deleteFile(fileKey: string) {
+    const bucket = this.config.getOrThrow('SUPABASE_STORAGE_BUCKET')
+    await this.supabase.storage.from(bucket).remove([fileKey])
   }
 }

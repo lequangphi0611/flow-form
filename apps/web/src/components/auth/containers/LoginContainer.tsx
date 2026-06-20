@@ -2,11 +2,14 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useQueryClient } from '@tanstack/react-query'
 import { signIn } from '@/lib/auth-client'
+import { sessionKeys } from '@/hooks/auth/useCurrentUser'
 import { LoginForm } from '../LoginForm'
 
 export function LoginContainer() {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const [isPending, setIsPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -20,6 +23,7 @@ export function LoginContainer() {
         setError('Email hoặc mật khẩu không đúng')
         return
       }
+      queryClient.invalidateQueries({ queryKey: sessionKeys.current })
       router.push('/forms')
     } catch {
       setError('Đã có lỗi xảy ra, vui lòng thử lại')

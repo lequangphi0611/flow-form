@@ -44,7 +44,56 @@ Trước khi viết plan, đọc **bắt buộc**:
 
 Ngoài ra: chạy `ls apps/web/src/components/ui/` để lấy danh sách shadcn đã cài.
 
-## Step 3 — Thiết kế wireframe (dùng logic /design-ui)
+## Step 3 — Quyết định fetch strategy (BẮT BUỘC trước wireframe)
+
+Với mỗi màn hình/section trong story, xác định rõ nguồn data và cách fetch **trước khi** vẽ wireframe. Quyết định sai ở đây dẫn đến refactor lớn sau.
+
+### Decision tree
+
+```
+Data này có yêu cầu nào dưới đây không?
+  ├─ SEO / meta tags cần data (title, description)           → Server
+  ├─ Route là public (f/[formId], landing page, ...)         → Server
+  ├─ Page load lần đầu: data KHÔNG thay đổi trong session    → Server
+  ├─ Data cần invalidate SAU mutation (refetch sau edit)     → Client (TanStack Query)
+  ├─ Data phụ thuộc user interaction (filter, sort, page)    → Client (TanStack Query)
+  └─ Data dùng cả server (initial load) + client (refetch)   → Hybrid
+```
+
+### Mapping sang code
+
+| Strategy | File | Dùng trong |
+|---|---|---|
+| **Server** | `src/lib/data/*.ts` | Server Component, `generateMetadata` |
+| **Client** | `src/lib/api/*.ts` + custom hook | `queryFn`/`mutationFn` trong TanStack Query |
+| **Hybrid** | Cả hai | Server fetch initial data → pass làm `initialData` cho `useQuery` |
+
+### Ví dụ thực tế
+
+| Màn hình | Strategy | Lý do |
+|---|---|---|
+| `f/[formId]` — public form | Server | SEO cần title/desc, không cần realtime |
+| `/forms/[id]/builder` — builder | Hybrid | Initial form schema từ server → client auto-save |
+| `/forms` — dashboard | Client | Cần refetch sau khi tạo/xóa form |
+| `/forms/[id]/analytics` — analytics | Client | Data stale, dùng TanStack Query cache |
+| `generateMetadata` | Server | Meta tags phải resolve trên server |
+
+### Output của Step này
+
+Ghi vào plan (Step 4) dưới dạng bảng:
+
+```
+| Data | Strategy | Lý do 1 câu |
+|---|---|---|
+| Form list | Client | Cần invalidate sau create/delete |
+| Form detail | Hybrid | SEO title + client auto-save |
+```
+
+Nếu strategy là **Hybrid**: ghi rõ hàm nào ở `lib/data/` và hàm nào ở `lib/api/`.
+
+---
+
+## Step 4 — Thiết kế wireframe (dùng logic /design-ui)
 
 Trước khi viết plan, output wireframe theo format chuẩn của `/design-ui`:
 
@@ -75,16 +124,17 @@ Route: [path]  |  Route group: [(name)]  |  Layout: [pattern từ rule 20]
 - Màu semantic: `text-blue-600` link, `text-red-600` error
 - Chỉ dùng `lucide-react` icon
 
-## Step 4 — Tạo implementation plan
+## Step 5 — Tạo implementation plan
 
-Dựa trên wireframe ở Step 3, tạo plan theo format chuẩn — in ra chat:
+Dựa trên wireframe ở Step 4 và fetch strategy ở Step 3, tạo plan theo format chuẩn — in ra chat:
 
 ```
 ## Plan: {US-id} — {Tên ngắn}
 
 ### Files to create
-- `apps/web/src/components/[feature]/[Name].tsx` — [Atom/Molecule/Organism — mô tả]
-- `apps/web/src/components/[feature]/containers/[Name]Container.tsx` — [nếu cần]
+- `apps/web/src/components/[feature]/[Name]/[Name].tsx` — [Presenter — mô tả]
+- `apps/web/src/components/[feature]/[Name]/[Name]Container.tsx` — [Container — nếu có side effect]
+- `apps/web/src/components/[feature]/[Name]/index.ts` — [entry point export]
 - `apps/web/src/hooks/[entity]/use[Name].ts` — [useQuery/useMutation hook]
 
 ### Files to modify
@@ -97,6 +147,12 @@ Dựa trên wireframe ở Step 3, tạo plan theo format chuẩn — in ra chat:
 | FormCard | Organism/Presenter | form, onDelete | Không |
 | FormListContainer | Container | — | useFormList, useDeleteForm |
 
+### Fetch strategy (từ Step 3)
+| Data | Strategy | File |
+|---|---|---|
+| Form list | Client | `lib/api/forms.ts` → `useFormList` |
+| Form detail | Hybrid | `lib/data/forms.ts` (server) + `lib/api/forms.ts` (client) |
+
 ### Hooks to create/reuse
 - `useFormList()` — đã có tại `hooks/forms/useFormList.ts` ← reuse
 - `useDeleteForm()` — đã có tại `hooks/forms/useDeleteForm.ts` ← reuse
@@ -108,16 +164,23 @@ Dựa trên wireframe ở Step 3, tạo plan theo format chuẩn — in ra chat:
 - `npx shadcn add card badge` — [từ wireframe Step 3]
 
 ### Checklist
-- [ ] Component có side effect → tách Container/Presenter (rule 08)
-- [ ] Component mới đặt đúng thư mục (rule 09)
+- [ ] Fetch strategy đã được quyết định: Server / Client / Hybrid cho từng data (Step 3)
+- [ ] Server fetch → hàm trong `lib/data/`, Client fetch → hàm trong `lib/api/` (rule 11)
+- [ ] Hybrid: server fetcher dùng `React.cache()`, client hook nhận `initialData` nếu cần (rule 10, 11)
+- [ ] Mỗi Organism có folder riêng: `[Name]/[Name].tsx` + `index.ts` (rule 08, 09)
+- [ ] Component có side effect → thêm `[Name]Container.tsx` vào cùng folder (rule 08)
+- [ ] `index.ts` export Container nếu có, export Presenter nếu không (rule 08)
 - [ ] useQuery/useMutation nằm trong custom hook (rule 04)
 - [ ] Không gọi fetch() trực tiếp trong component (rule 11)
 - [ ] Không có `any`, không có `console.log`
 - [ ] Boolean variable có prefix is/has/can/should
-- [ ] shadcn components thiếu đã được liệt kê để cài
+- [ ] shadcn trigger dùng `asChild` + `<Button>` child, **không** dùng raw `<button>` bên trong trigger (rule 06 §8)
+- [ ] List items trong Builder: `memo` + nhận `(stepId, fieldId)` + đọc store trực tiếp — **không nhận callbacks từ `.map()`** (rule 07 §4, rule 17 §5c)
+- [ ] List items ngoài Builder (FormCard, ResponseRow…): bọc `memo`, callbacks từ parent phải stable (rule 17 §1)
+- [ ] shadcn components thiếu đã được liệt kê để thêm qua `npx shadcn@latest add`
 ```
 
-## Step 5 — Approval gate (BẮT BUỘC)
+## Step 6 — Approval gate (BẮT BUỘC)
 
 Sau khi in wireframe + plan, dùng `AskUserQuestion`:
 
@@ -136,11 +199,11 @@ AskUserQuestion({
 })
 ```
 
-- **Approve** → chuyển sang Step 6
+- **Approve** → chuyển sang Step 7
 - **Revise wireframe** → cập nhật wireframe, cập nhật plan theo, hỏi lại
 - **Revise plan** → giữ nguyên wireframe, cập nhật plan, hỏi lại
 
-## Step 6 — Implement
+## Step 7 — Implement
 
 Thực hiện đúng theo plan đã approve:
 1. Cài shadcn components còn thiếu (`npx shadcn add ...`) nếu có

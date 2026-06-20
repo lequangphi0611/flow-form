@@ -5,7 +5,7 @@
 Atomic Design được điều chỉnh cho Next.js App Router + shadcn/ui. Bỏ tầng **Templates** vì Next.js `layout.tsx` đã đảm nhiệm vai trò đó.
 
 ```
-Atoms       →  components/ui/          (shadcn/ui primitives)
+Atoms       →  components/ui/          (shadcn/ui generated)
 Molecules   →  components/common/      (kết hợp atoms, dùng chung toàn app)
 Organisms   →  components/[feature]/   (phức tạp, gắn với feature)
 (Templates) →  app/**/layout.tsx       (Next.js layout thay thế)
@@ -28,8 +28,9 @@ components/ui/
 ├── badge.tsx
 ├── card.tsx
 ├── dialog.tsx
-├── select.tsx
-└── separator.tsx
+├── dropdown-menu.tsx
+├── skeleton.tsx
+└── switch.tsx
 ```
 
 **Khi cần custom atom:** Tạo file mới trong `components/common/` — không sửa file trong `ui/`.
@@ -97,23 +98,38 @@ export function FormField({ label, error, required, helpText, children }: FormFi
 - Được phép đọc Zustand store (organisms của builder)
 - Đặt trong thư mục feature, không dùng chung tự do
 
+Mỗi Organism được bọc trong **folder riêng** cùng tên — xem rule 08 để biết chi tiết.
+
 ```
 components/
 ├── forms/
-│   ├── FormGrid.tsx
-│   └── FormCard.tsx
+│   ├── FormList/
+│   │   ├── FormList.tsx            ← Presenter
+│   │   ├── FormListContainer.tsx   ← Container
+│   │   └── index.ts
+│   └── FormCard/
+│       ├── FormCard.tsx
+│       └── index.ts
 ├── builder/
-│   ├── containers/
-│   ├── StepList.tsx
-│   ├── StepCard.tsx
-│   ├── StepCanvas.tsx
-│   ├── FieldCard.tsx
-│   ├── FieldLibrary.tsx
-│   └── FieldSettingsPanel.tsx
+│   ├── StepList/
+│   │   ├── StepList.tsx
+│   │   ├── StepListContainer.tsx
+│   │   └── index.ts
+│   ├── StepCard/
+│   │   ├── StepCard.tsx
+│   │   └── index.ts
+│   └── FieldPanel/
+│       ├── FieldPanel.tsx
+│       ├── FieldPanelContainer.tsx
+│       └── index.ts
 └── analytics/
-    ├── FunnelChart.tsx
-    ├── ResponseTable.tsx
-    └── SummaryCards.tsx
+    ├── FunnelChart/
+    │   ├── FunnelChart.tsx
+    │   ├── FunnelChartContainer.tsx
+    │   └── index.ts
+    └── ResponseTable/
+        ├── ResponseTable.tsx
+        └── index.ts
 ```
 
 ---
@@ -144,8 +160,8 @@ Khi tạo component mới, trả lời theo thứ tự:
 
 1. **Có phải shadcn primitive?** → `components/ui/` (Atom)
 2. **Dùng được ở nhiều feature, không fetch, không store?** → `components/common/` (Molecule)
-3. **Gắn với 1 feature cụ thể?** → `components/[feature]/` (Organism)
-4. **Cần fetch API hoặc kết nối store?** → `components/[feature]/containers/` (Container, xem rule 08)
+3. **Gắn với 1 feature cụ thể?** → `components/[feature]/[Name]/` (Organism — folder riêng)
+4. **Cần fetch API hoặc kết nối store?** → thêm `[Name]Container.tsx` vào cùng folder (xem rule 08)
 5. **Là entry point của route?** → `app/**/page.tsx` (Page)
 
 ---

@@ -14,7 +14,7 @@ export class FormOwnerGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>()
-    const formId = request.params['id']
+    const formId = (request.params['id'] ?? request.params['formId']) as string
     const userId = request.user?.id
 
     const form = await this.formsRepository.findOwnerById(formId)
