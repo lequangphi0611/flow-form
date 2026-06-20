@@ -225,53 +225,88 @@ export function SortableFieldCard({ field, index }: { field: FieldSchema; index:
 
 ---
 
-## 4. List items trong Builder — nhận `(stepId, fieldId)`, đọc state từ store
+## 4. List items trong Builder — Container (memo) + Presenter
 
-List items có thể memo'd hiệu quả chỉ khi props của chúng ổn định. Callbacks inline trong `.map()` luôn tạo reference mới mỗi render → bypass memo.
+List items vẫn tuân theo pattern Container/Presenter (rule 08), nhưng `memo` đặt ở **Container**, không phải Presenter.
+
+**Nguyên tắc bất biến:** Parent trong `.map()` chỉ truyền IDs — không truyền callbacks, không truyền full object.
 
 ```tsx
-// ❌ — Parent tạo inline callbacks trong map → memo vô nghĩa
+// ❌ — Parent tạo inline callbacks → memo vô nghĩa
 {fields.map((field) => (
   <FieldCard
     key={field.id}
     field={field}
     onUpdate={(updates) => updateField(stepId, field.id, updates)}  // ← new ref mỗi render
-    onDelete={() => removeField(stepId, field.id)}                  // ← new ref mỗi render
+    onDelete={() => removeField(stepId, field.id)}                   // ← new ref mỗi render
   />
 ))}
 
-// ✅ — Parent chỉ pass IDs; FieldCard tự đọc từ store và gọi actions trực tiếp
+// ✅ — Parent chỉ pass IDs → Container tự lo phần còn lại
 {fields.map((field) => (
-  <FieldCard key={field.id} stepId={stepId} fieldId={field.id} />
+  <FieldCardContainer key={field.id} stepId={stepId} fieldId={field.id} />
 ))}
+```
 
-// Bên trong FieldCard:
-export const FieldCard = memo(function FieldCard({ stepId, fieldId }: { stepId: string; fieldId: string }) {
+```tsx
+// ✅ — FieldCardContainer: memo + đọc store + dispatch
+// src/components/builder/FieldCard/FieldCardContainer.tsx
+export const FieldCardContainer = memo(function FieldCardContainer({
+  stepId,
+  fieldId,
+}: {
+  stepId: string
+  fieldId: string
+}) {
   const field = useBuilderStore((s) =>
     s.form?.steps.find((st) => st.id === stepId)?.fields.find((f) => f.id === fieldId)
   )
-  const updateField = useBuilderStore((s) => s.updateField)  // stable store action
-  const removeField = useBuilderStore((s) => s.removeField)  // stable store action
+  const updateField = useBuilderStore((s) => s.updateField)
+  const removeField = useBuilderStore((s) => s.removeField)
 
   if (!field) return null
 
   return (
-    <div>
-      <input
-        value={field.label}
-        onChange={(e) => updateField(stepId, fieldId, { label: e.target.value })}
-      />
-      <button onClick={() => removeField(stepId, fieldId)}>Xóa</button>
-    </div>
+    <FieldCard
+      field={field}
+      onUpdate={(updates) => updateField(stepId, fieldId, updates)}
+      onDelete={() => removeField(stepId, fieldId)}
+    />
   )
 })
 ```
 
-**Tại sao hoạt động:** Store actions (`updateField`, `removeField`) là **stable references** — Zustand đảm bảo không đổi giữa renders. Inline arrows bên trong component (không phải trong `.map()`) không tạo vấn đề về memo.
+```tsx
+// ✅ — FieldCard: Presenter thuần — nhận props, không biết store tồn tại
+// src/components/builder/FieldCard/FieldCard.tsx
+interface FieldCardProps {
+  field: FieldSchema
+  onUpdate: (updates: Partial<FieldSchema>) => void
+  onDelete: () => void
+}
+
+export function FieldCard({ field, onUpdate, onDelete }: FieldCardProps) {
+  return (
+    <div>
+      <input
+        value={field.label}
+        onChange={(e) => onUpdate({ label: e.target.value })}
+      />
+      <button onClick={onDelete}>Xóa</button>
+    </div>
+  )
+}
+```
+
+**Tại sao memo hoạt động ở Container:**
+- Selector Zustand trả về cùng reference khi `field` đó không đổi → Container không re-render
+- Inline arrows bên trong Container (không phải trong `.map()`) không phá vỡ memo
+- Store actions (`updateField`, `removeField`) là stable refs — Zustand đảm bảo
 
 **Quy tắc:**
-- List items trong Builder nhận **`(entityId)` hoặc `(parentId, entityId)`** — không nhận full object hay callbacks
-- Props stable → `React.memo` hoạt động đúng → chỉ item nào thay đổi mới re-render
+- Parent trong `.map()` truyền **`(entityId)` hoặc `(parentId, entityId)`** — không callbacks, không full object
+- `memo` đặt ở **Container**, không phải Presenter
+- Presenter hoàn toàn thuần — dễ test, dễ Storybook
 
 ---
 

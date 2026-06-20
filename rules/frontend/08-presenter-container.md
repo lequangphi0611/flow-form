@@ -151,7 +151,7 @@ export function FormListContainer() {
 }
 ```
 
-> ⚠️ **Ngoại lệ Builder — list items:** `FieldCard`, `StepItem` và các list items trong Builder **KHÔNG** nhận callbacks từ Container hay Presenter. Thay vào đó, chúng nhận IDs và tự đọc data từ store qua selector, gọi store actions trực tiếp. Lý do: callbacks inline trong `.map()` tạo reference mới mỗi render → `React.memo` vô nghĩa. Xem rule 07 §4.
+> **Builder list items (`FieldCard`, `StepItem`…):** Vẫn tách Container/Presenter bình thường. Điểm khác biệt: `memo` đặt ở **Container** (không phải Presenter), và parent trong `.map()` chỉ truyền IDs — không truyền callbacks. Container tự đọc store bằng selector, inline arrows bên trong Container không phá vỡ memo. Xem rule 07 §4.
 
 ---
 
@@ -412,8 +412,8 @@ export function RegisterForm({ isPending, error, onSubmit }: RegisterFormProps) 
 | Component cần `useMutation` | ✅ Tạo Container |
 | Component gọi `signIn.email()` / `signUp.email()` | ✅ Tạo Container |
 | Component gọi `router.push()` sau side effect | ✅ Tạo Container |
-| Component đọc từ Zustand store (ngoài Builder list items) | ✅ Tạo Container |
-| **Builder list items** (`FieldCard`, `StepItem`…) đọc store trực tiếp | ❌ Không cần Container — pattern rule 07 §4 |
+| Component đọc từ Zustand store | ✅ Tạo Container |
+| **Builder list items** (`FieldCard`, `StepItem`…) | ✅ Tạo Container — `memo` đặt ở Container, parent chỉ pass IDs (rule 07 §4) |
 | Server Component async fetch | ✅ Server Component = Container tự nhiên |
 | Component chỉ nhận props và render | ❌ Không cần Container, đây là Presenter |
 | Component có `useState` UI đơn giản | ❌ Không cần Container (toggle, hover không tính) |
