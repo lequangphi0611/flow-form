@@ -77,6 +77,44 @@ Quy tắc Hybrid:
 
 ---
 
+## Loading UX cho Server / Hybrid — dùng `<Suspense>` + skeleton
+
+Server fetch sẽ **block** cho tới khi xong. Đừng `await` ngay trong `page.tsx` cho phần
+data nặng → block cả trang, mất skeleton (rất tệ khi API cold start). Thay vào đó:
+
+- Giữ `page.tsx` (hoặc shell tĩnh: header, nút) render **ngay**.
+- Tách phần fetch vào **async Server Component con**, bọc `<Suspense fallback={<Skeleton/>}>`
+  → shell hiện tức thì, data **stream** vào sau, skeleton hiện trong lúc chờ.
+- Nhiều khối độc lập → mỗi khối một `<Suspense>` riêng để stream song song (rule 10 §streaming).
+- Với Hybrid `initialData`: skeleton "loading" thuộc về **Suspense phía server**, nên client
+  container **không** cần nhánh `isLoading` nữa (initialData → không bao giờ loading) — chỉ
+  còn `isError` + empty state.
+
+```tsx
+// ✅ — page.tsx: shell render ngay, list stream trong Suspense
+export default function FormsPage() {
+  return (
+    <div>
+      <Header />                                    {/* tĩnh — hiện ngay */}
+      <Suspense fallback={<FormListSkeleton />}>
+        <FormListSection />                         {/* async server: fetch + seed client */}
+      </Suspense>
+    </div>
+  )
+}
+```
+
+```tsx
+// ❌ — await thẳng trong page → block cả trang, không có skeleton
+export default async function FormsPage() {
+  const forms = await getForms()                    // ❌ cả header cũng phải chờ
+  return <div><Header /><FormListContainer initialForms={forms} /></div>
+}
+```
+
+> `loading.tsx` ở segment cũng tạo Suspense tự động nhưng fallback **thay cả trang** (kể cả
+> header). Ưu tiên `<Suspense>` quanh đúng phần data để giữ shell tĩnh hiện ngay.
+
 ## Anti-patterns
 
 ```tsx
@@ -100,3 +138,5 @@ Quy tắc Hybrid:
 - [ ] Hybrid → server fetch + `initialData` cho `useQuery` (hoặc seed Zustand); client không fetch lại đường đọc
 - [ ] Client → `lib/api` + custom hook (rule 04); chỉ cho data phụ thuộc tương tác
 - [ ] Không client-fetch dữ liệu đã có sẵn lúc render đầu (không tạo waterfall/skeleton thừa)
+- [ ] Server/Hybrid: tách async Server Component con + `<Suspense fallback={<Skeleton/>}>`, không `await` block cả trang trong `page.tsx`
+- [ ] Hybrid `initialData`: bỏ nhánh `isLoading` ở client (skeleton thuộc Suspense), chỉ giữ `isError` + empty
