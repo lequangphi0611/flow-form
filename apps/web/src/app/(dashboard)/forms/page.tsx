@@ -1,5 +1,5 @@
 import { CreateFormButton } from '@/components/forms/CreateFormButton'
-import { FormListContainer } from '@/components/forms/containers/FormListContainer'
+import { FormListContainer } from '@/components/forms/FormList'
 
 export default function FormsPage() {
   return (

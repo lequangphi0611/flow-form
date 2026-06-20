@@ -10,6 +10,12 @@ So that **tôi có thể thiết kế quy trình thu thập thông tin nhiều b
 
 ## Acceptance Criteria
 
+### Form Title
+- [ ] AC13: Owner có thể đổi tên form bằng cách nhấn vào tiêu đề form ở header của Builder — tiêu đề chuyển sang chế độ chỉnh sửa inline (input field) ngay tại chỗ, không mở modal hay chuyển trang
+- [ ] AC14: Khi đang chỉnh sửa tiêu đề form, nhấn Enter hoặc click ra ngoài thì xác nhận thay đổi; nhấn Escape thì hủy và giữ nguyên tiêu đề cũ
+- [ ] AC15: Tiêu đề form không được để trống — nếu owner xóa hết nội dung rồi xác nhận, hiển thị thông báo lỗi inline và khôi phục lại tiêu đề trước đó
+- [ ] AC16: Thay đổi tiêu đề form được auto-save theo cùng cơ chế AC11 (hiển thị trạng thái "Đang lưu..." và "Đã lưu")
+
 ### Quản lý Steps
 - [ ] AC1: Builder mặc định có sẵn 1 step khi form mới được tạo
 - [ ] AC2: Owner có thể thêm step mới — step mới xuất hiện ở cuối danh sách, có tiêu đề mặc định là "Bước [số thứ tự]"

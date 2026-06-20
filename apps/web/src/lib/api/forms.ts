@@ -1,4 +1,5 @@
 import type { FormSchema } from '@flowform/types'
+import type { UpdateFormDto } from '@flowform/validators'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? ''
 
@@ -22,12 +23,26 @@ export const formsApi = {
     return fetch(`${API_URL}/api/forms/${id}`, { credentials: 'include' }).then(handleResponse<FormSchema>)
   },
 
+  getForEditor(id: string): Promise<FormSchema> {
+    return fetch(`${API_URL}/api/forms/${id}/editor`, { credentials: 'include' }).then(handleResponse<FormSchema>)
+  },
+
   create(data: { title: string }): Promise<FormSchema> {
     return fetch(`${API_URL}/api/forms`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
+    }).then(handleResponse<FormSchema>)
+  },
+
+  updateSchema(id: string, dto: UpdateFormDto, { keepalive = false }: { keepalive?: boolean } = {}): Promise<FormSchema> {
+    return fetch(`${API_URL}/api/forms/${id}`, {
+      method: 'PATCH',
+      credentials: 'include',
+      keepalive,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dto),
     }).then(handleResponse<FormSchema>)
   },
 

@@ -15,6 +15,7 @@ interface BuilderActions {
   setForm: (form: FormSchema) => void
   selectStep: (stepId: string | null) => void
   selectField: (fieldId: string | null) => void
+  updateTitle: (title: string) => void
   addStep: () => void
   removeStep: (stepId: string) => void
   updateStep: (stepId: string, updates: Partial<Pick<StepSchema, 'title' | 'description'>>) => void
@@ -34,6 +35,14 @@ export const useBuilderStore = create<BuilderState & BuilderActions>()(
     setForm: (form) =>
       set((s) => {
         s.form = form
+        s.selectedStepId = form.steps[0]?.id ?? null
+        s.selectedFieldId = null
+      }),
+
+    updateTitle: (title) =>
+      set((s) => {
+        if (!s.form) return
+        s.form.title = title
       }),
 
     selectStep: (stepId) =>

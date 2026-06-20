@@ -16,9 +16,11 @@
 
 ## Quy tắc
 
-### 1. Container — chỉ orchestrate, không layout
+### 1. Container — chỉ orchestrate, không layout, không inline query
 
 Container không viết JSX layout phức tạp. Nó lấy data và truyền xuống Presenter.
+
+> **`useQuery` và `useMutation` không được viết inline trong Container.** Phải tách ra custom hook tại `src/hooks/[entity]/use[Name].ts` rồi gọi hook đó trong Container. (→ rule 04 §3)
 
 ```tsx
 // ✅ — Container thin: lấy data, truyền xuống Presenter
@@ -418,3 +420,11 @@ export function RegisterForm({ isPending, error, onSubmit }: RegisterFormProps) 
 | Component chỉ nhận props và render | ❌ Không cần Container, đây là Presenter |
 | Component có `useState` UI đơn giản | ❌ Không cần Container (toggle, hover không tính) |
 | Button nhỏ tự chứa (SignOutButton, CopyButton) | ❌ Không cần Container — đủ đơn giản để self-contain |
+
+---
+
+## Checklist trước khi viết Container
+
+- [ ] `useQuery` / `useMutation` đã được tách ra custom hook tại `src/hooks/` — **không inline trong Container** (rule 04 §3)
+- [ ] Container không có JSX layout phức tạp — chỉ gọi hook, xử lý loading/error, truyền data xuống Presenter
+- [ ] Presenter không import bất kỳ thứ gì từ `@tanstack/react-query`, `@/store/`, hay `next/navigation`

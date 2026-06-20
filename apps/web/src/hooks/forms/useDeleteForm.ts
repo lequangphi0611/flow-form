@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+
 import { formsApi } from '@/lib/api/forms'
 import { formKeys } from '@/lib/query-keys'
 
@@ -14,8 +15,7 @@ export function useDeleteForm(options?: {
       queryClient.invalidateQueries({ queryKey: formKeys.root })
       options?.onSuccess?.()
     },
-    onError: (e) => {
-      console.error('Delete form failed:', e)
+    onError: () => {
       options?.onError?.()
     },
   })
