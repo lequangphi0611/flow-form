@@ -27,9 +27,11 @@ export function FormListContainer() {
       setDeletingFormId(null)
       toast.success('Đã xóa form thành công')
     },
-    onError: () => {
+    onError: (error) => {
       setDeletingFormId(null)
-      toast.error('Xóa form thất bại. Vui lòng thử lại.')
+      toast.error('Xóa form thất bại', {
+        description: error instanceof Error ? error.message : 'Vui lòng thử lại.',
+      })
     },
   })
 

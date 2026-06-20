@@ -5,13 +5,29 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? ''
 
 async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
-    const message = await res.text().catch(() => res.statusText)
-    throw new Error(message || `HTTP ${res.status}`)
+    throw new Error(await extractErrorMessage(res))
   }
   if (res.status === 204 || res.headers.get('content-length') === '0') {
     return undefined as T
   }
   return res.json() as Promise<T>
+}
+
+// API trả lỗi theo RFC 7807 Problem Details (application/problem+json).
+// Ưu tiên `detail` (mô tả cụ thể), rồi `title`, rồi raw text, cuối cùng là status.
+async function extractErrorMessage(res: Response): Promise<string> {
+  const text = await res.text().catch(() => '')
+  if (text) {
+    try {
+      const problem = JSON.parse(text) as { detail?: string; title?: string }
+      if (problem.detail) return problem.detail
+      if (problem.title) return problem.title
+    } catch {
+      // Không phải JSON — dùng raw text
+    }
+    return text
+  }
+  return res.statusText || `HTTP ${res.status}`
 }
 
 export const formsApi = {

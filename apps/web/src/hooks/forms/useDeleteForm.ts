@@ -5,7 +5,7 @@ import { formKeys } from '@/lib/query-keys'
 
 export function useDeleteForm(options?: {
   onSuccess?: () => void
-  onError?: () => void
+  onError?: (error: unknown) => void
 }) {
   const queryClient = useQueryClient()
 
@@ -15,8 +15,8 @@ export function useDeleteForm(options?: {
       queryClient.invalidateQueries({ queryKey: formKeys.root })
       options?.onSuccess?.()
     },
-    onError: () => {
-      options?.onError?.()
+    onError: (error) => {
+      options?.onError?.(error)
     },
   })
 }
