@@ -4,13 +4,15 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+
 import { formKeys } from '@/lib/query-keys'
 import { useFormList } from '@/hooks/forms/useFormList'
 import { useDeleteForm } from '@/hooks/forms/useDeleteForm'
-import { FormGrid } from '../FormGrid'
-import { FormGridSkeleton } from '../FormGridSkeleton'
-import { DeleteFormDialog } from '../DeleteFormDialog'
 import { EmptyState } from '@/components/common/EmptyState'
+
+import { FormList } from './FormList'
+import { FormListSkeleton } from '../FormListSkeleton'
+import { DeleteFormDialog } from '../DeleteFormDialog'
 import { CreateFormButton } from '../CreateFormButton'
 
 export function FormListContainer() {
@@ -33,7 +35,7 @@ export function FormListContainer() {
 
   const deletingForm = forms.find((f) => f.id === deletingFormId)
 
-  if (isLoading) return <FormGridSkeleton />
+  if (isLoading) return <FormListSkeleton />
 
   if (isError) {
     return (
@@ -64,7 +66,7 @@ export function FormListContainer() {
 
   return (
     <>
-      <FormGrid
+      <FormList
         forms={forms}
         onDelete={(id) => setDeletingFormId(id)}
         onEdit={(id) => router.push(`/forms/${id}/builder`)}

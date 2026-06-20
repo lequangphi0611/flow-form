@@ -2,10 +2,12 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { signUp } from '@/lib/auth-client'
-import { RegisterForm } from '../RegisterForm'
 
-export function RegisterContainer() {
+import { signUp } from '@/lib/auth-client'
+
+import { RegisterForm } from './RegisterForm'
+
+export function RegisterFormContainer() {
   const router = useRouter()
   const [isPending, setIsPending] = useState(false)
   const [emailError, setEmailError] = useState<string | undefined>()

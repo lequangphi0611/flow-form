@@ -3,11 +3,13 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
+
 import { signIn } from '@/lib/auth-client'
 import { sessionKeys } from '@/hooks/auth/useCurrentUser'
-import { LoginForm } from '../LoginForm'
 
-export function LoginContainer() {
+import { LoginForm } from './LoginForm'
+
+export function LoginFormContainer() {
   const router = useRouter()
   const queryClient = useQueryClient()
   const [isPending, setIsPending] = useState(false)

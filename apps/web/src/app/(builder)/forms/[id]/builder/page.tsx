@@ -1,4 +1,4 @@
-import { BuilderContainer } from '@/components/builder/containers/BuilderContainer'
+import { BuilderLayoutContainer } from '@/components/builder/BuilderLayout'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -6,5 +6,5 @@ interface Props {
 
 export default async function BuilderPage({ params }: Props) {
   const { id } = await params
-  return <BuilderContainer formId={id} />
+  return <BuilderLayoutContainer formId={id} />
 }

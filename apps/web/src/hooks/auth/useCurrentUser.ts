@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+
 import { authClient } from '@/lib/auth-client'
 
 export const sessionKeys = {
@@ -12,8 +13,8 @@ export function useCurrentUser() {
       const result = await authClient.getSession()
       return result.data
     },
-    staleTime: 5 * 60 * 1000, // 5 phút — session không đổi thường xuyên
-    gcTime: 10 * 60 * 1000,   // giữ cache 10 phút sau khi component unmount
-    retry: false,               // session 401 không cần retry
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    retry: false,
   })
 }
