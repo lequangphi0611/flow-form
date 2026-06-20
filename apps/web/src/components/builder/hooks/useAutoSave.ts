@@ -1,12 +1,10 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
 
 import type { FormSchema } from '@flowform/types'
 import { useBuilderStore } from '@/store/builder.store'
 import { formsApi } from '@/lib/api/forms'
-import { formKeys } from '@/lib/query-keys'
 
 export type SaveStatusValue = 'idle' | 'saving' | 'saved' | 'error'
 
@@ -15,7 +13,6 @@ const SAVED_DISPLAY_DURATION = 3000
 
 export function useAutoSave(formId: string): SaveStatusValue {
   const form = useBuilderStore((s) => s.form)
-  const queryClient = useQueryClient()
   const [status, setStatus] = useState<SaveStatusValue>('idle')
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -40,12 +37,12 @@ export function useAutoSave(formId: string): SaveStatusValue {
     timerRef.current = setTimeout(async () => {
       setStatus('saving')
       try {
-        const saved = await formsApi.updateSchema(formId, {
+        await formsApi.updateSchema(formId, {
           title: form.title,
           schema: { steps: form.steps },
         })
-        // Keep the query cache in sync so navigating away and back restores the latest state
-        queryClient.setQueryData(formKeys.editor(formId), saved)
+        // Read path là server fetch (no-store) → quay lại trang sẽ tự lấy bản mới nhất,
+        // không cần sync cache client. Store vẫn là source-of-truth khi đang edit.
         pendingFormRef.current = null
         setStatus('saved')
         savedTimerRef.current = setTimeout(() => setStatus('idle'), SAVED_DISPLAY_DURATION)
@@ -58,7 +55,7 @@ export function useAutoSave(formId: string): SaveStatusValue {
       if (timerRef.current) clearTimeout(timerRef.current)
       if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
     }
-  }, [form, formId, queryClient])
+  }, [form, formId])
 
   useEffect(() => {
     function handleBeforeUnload() {

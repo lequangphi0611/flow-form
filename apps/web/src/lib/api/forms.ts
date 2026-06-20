@@ -23,10 +23,6 @@ export const formsApi = {
     return fetch(`${API_URL}/api/forms/${id}`, { credentials: 'include' }).then(handleResponse<FormSchema>)
   },
 
-  getForEditor(id: string): Promise<FormSchema> {
-    return fetch(`${API_URL}/api/forms/${id}/editor`, { credentials: 'include' }).then(handleResponse<FormSchema>)
-  },
-
   create(data: { title: string }): Promise<FormSchema> {
     return fetch(`${API_URL}/api/forms`, {
       method: 'POST',
