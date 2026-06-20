@@ -24,13 +24,13 @@ Container không viết JSX layout phức tạp. Nó lấy data và truyền xu�
 
 ```tsx
 // ✅ — Container thin: lấy data, truyền xuống Presenter
-// src/components/forms/containers/FormListContainer.tsx
+// src/components/forms/FormList/FormListContainer.tsx
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
 import { formsApi } from '@/lib/api/forms'
-import { FormGrid } from '../FormGrid'
-import { FormGridSkeleton } from '../FormGridSkeleton'
+import { FormList } from './FormList'
+import { FormListSkeleton } from '../FormListSkeleton'
 import { formKeys } from '@/lib/query-keys'
 
 export function FormListContainer() {
@@ -39,10 +39,10 @@ export function FormListContainer() {
     queryFn: formsApi.list,  // ← lib/api, không phải fetch()
   })
 
-  if (isLoading) return <FormGridSkeleton />
+  if (isLoading) return <FormListSkeleton />
   if (isError) return <p className="text-red-500">Không thể tải danh sách form.</p>
 
-  return <FormGrid forms={forms} />  // toàn bộ layout nằm trong Presenter
+  return <FormList forms={forms} />  // toàn bộ layout nằm trong Presenter
 }
 ```
 
@@ -72,16 +72,16 @@ export function FormListContainer() {
 
 ```tsx
 // ✅ — Presenter thuần: chỉ render, không biết data đến từ đâu
-// src/components/forms/FormGrid.tsx
+// src/components/forms/FormList/FormList.tsx
 import type { FormSchema } from '@flowform/types'
-import { FormCard } from './FormCard'
+import { FormCard } from '@/components/forms/FormCard'
 
-interface FormGridProps {
+interface FormListProps {
   forms: FormSchema[]
   onDelete?: (id: string) => void
 }
 
-export function FormGrid({ forms, onDelete }: FormGridProps) {
+export function FormList({ forms, onDelete }: FormListProps) {
   if (forms.length === 0) {
     return (
       <div className="text-center py-16 text-gray-400">
@@ -121,11 +121,12 @@ Mutation logic ở Container, Presenter chỉ gọi callback.
 
 ```tsx
 // ✅ — Container giữ mutation, truyền callback xuống
-// src/components/forms/containers/FormListContainer.tsx
+// src/components/forms/FormList/FormListContainer.tsx
 'use client'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { FormGrid } from '../FormGrid'
+import { FormList } from './FormList'
+import { FormListSkeleton } from '../FormListSkeleton'
 import { formKeys } from '@/lib/query-keys'
 
 export function FormListContainer() {
@@ -141,10 +142,10 @@ export function FormListContainer() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: formKeys.all }),
   })
 
-  if (isLoading) return <FormGridSkeleton />
+  if (isLoading) return <FormListSkeleton />
 
   return (
-    <FormGrid
+    <FormList
       forms={forms}
       onDelete={(id) => deleteMutation.mutate(id)}  // callback xuống Presenter
     />
@@ -152,7 +153,7 @@ export function FormListContainer() {
 }
 ```
 
-> ⚠️ **Ngoại lệ Builder — list items:** `FieldCard`, `StepItem` và các list items trong Builder **KHÔNG** nhận callbacks từ Container hay Presenter. Thay vào đó, chúng nhận IDs và tự đọc data từ store qua selector, gọi store actions trực tiếp. Lý do: callbacks inline trong `.map()` tạo reference mới mỗi render → `React.memo` vô nghĩa. Xem rule 07 §4.
+> **Builder list items (`FieldCard`, `StepItem`…):** Vẫn tách Container/Presenter bình thường. Điểm khác biệt: `memo` đặt ở **Container** (không phải Presenter), và parent trong `.map()` chỉ truyền IDs — không truyền callbacks. Container tự đọc store bằng selector, inline arrows bên trong Container không phá vỡ memo. Xem rule 07 §4.
 
 ---
 
@@ -162,7 +163,7 @@ Trong Builder, data đến từ Zustand store chứ không phải API trực ti�
 
 ```tsx
 // ✅ — FieldPanelContainer kết nối store, FieldPanel orchestrate DnD
-// src/components/builder/containers/FieldPanelContainer.tsx
+// src/components/builder/FieldPanel/FieldPanelContainer.tsx
 'use client'
 
 import { useBuilderStore } from '@/store/builder.store'
@@ -192,7 +193,7 @@ export function FieldPanelContainer() {
 
 ```tsx
 // ✅ — FieldPanel: Presenter — orchestrate DnD, list items chỉ nhận IDs
-// src/components/builder/FieldPanel.tsx
+// src/components/builder/FieldPanel/FieldPanel.tsx
 
 // Key: KHÔNG truyền onUpdateField, onDeleteField xuống FieldCard
 // FieldCard tự đọc field từ store, gọi store actions trực tiếp
@@ -254,14 +255,60 @@ export default async function FormsPage() {
 
 ## Cấu trúc thư mục
 
-> Xem `09-atomic-design.md` để biết cấu trúc đầy đủ.
-> Container nằm trong subfolder `containers/` của từng feature:
-> ```
-> components/[feature]/
-> ├── containers/
-> │   └── [Feature]Container.tsx   ← Container
-> └── [Feature].tsx                ← Presenter
-> ```
+Mỗi component group (Presenter ± Container) được bọc trong **folder riêng** cùng tên với component:
+
+```
+components/[feature]/
+└── [ComponentName]/                        ← folder bọc — luôn có
+    ├── [ComponentName].tsx                 ← Presenter
+    ├── [ComponentName]Container.tsx        ← Container (chỉ khi có side effect)
+    └── index.ts                            ← Entry point — export public API
+```
+
+**`index.ts` — quy tắc export:**
+
+```ts
+// Có Container → export Container làm entry chính
+export { LoginFormContainer } from './LoginFormContainer'
+
+// Chỉ có Presenter → export Presenter trực tiếp
+export { FormCard } from './FormCard'
+```
+
+**Ví dụ thực tế:**
+
+```
+components/
+├── auth/
+│   └── LoginForm/
+│       ├── LoginForm.tsx               ← Presenter: nhận isPending, onSubmit
+│       ├── LoginFormContainer.tsx      ← Container: gọi signIn.email(), router.push()
+│       └── index.ts                    ← export { LoginFormContainer }
+├── forms/
+│   ├── FormList/
+│   │   ├── FormList.tsx                ← Presenter: nhận forms[], onDelete
+│   │   ├── FormListContainer.tsx       ← Container: useFormList, useDeleteForm
+│   │   └── index.ts                    ← export { FormListContainer }
+│   └── FormCard/
+│       ├── FormCard.tsx                ← Presenter thuần (không có Container)
+│       └── index.ts                    ← export { FormCard }
+└── builder/
+    └── FieldPanel/
+        ├── FieldPanel.tsx              ← Presenter: orchestrate DnD
+        ├── FieldPanelContainer.tsx     ← Container: useBuilderStore
+        └── index.ts                    ← export { FieldPanelContainer }
+```
+
+**Page import từ folder — không import thẳng file bên trong:**
+
+```tsx
+// ✅
+import { FormListContainer } from '@/components/forms/FormList'
+import { FormCard } from '@/components/forms/FormCard'
+
+// ❌
+import { FormListContainer } from '@/components/forms/FormList/FormListContainer'
+```
 
 ---
 
@@ -295,22 +342,26 @@ export function RegisterForm() {
 ```
 
 ```
-// ✅ — ĐÚNG: tách thành 2 file
-components/auth/containers/RegisterContainer.tsx  ← signUp.email(), router.push()
-components/auth/RegisterForm.tsx                  ← nhận { isPending, error, onSubmit } qua props
-app/(auth)/register/page.tsx                      ← chỉ import RegisterContainer
+// ✅ — ĐÚNG: tách thành folder với 2 file + index
+components/auth/RegisterForm/
+├── RegisterForm.tsx              ← nhận { isPending, error, onSubmit } qua props
+├── RegisterFormContainer.tsx     ← signUp.email(), router.push()
+└── index.ts                      ← export { RegisterFormContainer }
+
+app/(auth)/register/page.tsx      ← import { RegisterFormContainer } from '@/components/auth/RegisterForm'
 ```
 
 ```tsx
-// ✅ — RegisterContainer
+// ✅ — RegisterFormContainer
+// src/components/auth/RegisterForm/RegisterFormContainer.tsx
 'use client'
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { signUp } from '@/lib/auth-client'
-import { RegisterForm } from '../RegisterForm'
+import { RegisterForm } from './RegisterForm'
 
-export function RegisterContainer() {
+export function RegisterFormContainer() {
   const router = useRouter()
   const [isPending, setIsPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -331,8 +382,14 @@ export function RegisterContainer() {
 }
 ```
 
+```ts
+// src/components/auth/RegisterForm/index.ts
+export { RegisterFormContainer } from './RegisterFormContainer'
+```
+
 ```tsx
 // ✅ — RegisterForm (Presenter) — không biết signUp hay router tồn tại
+// src/components/auth/RegisterForm/RegisterForm.tsx
 interface RegisterFormProps {
   isPending: boolean
   error: string | null
@@ -357,8 +414,8 @@ export function RegisterForm({ isPending, error, onSubmit }: RegisterFormProps) 
 | Component cần `useMutation` | ✅ Tạo Container |
 | Component gọi `signIn.email()` / `signUp.email()` | ✅ Tạo Container |
 | Component gọi `router.push()` sau side effect | ✅ Tạo Container |
-| Component đọc từ Zustand store (ngoài Builder list items) | ✅ Tạo Container |
-| **Builder list items** (`FieldCard`, `StepItem`…) đọc store trực tiếp | ❌ Không cần Container — pattern rule 07 §4 |
+| Component đọc từ Zustand store | ✅ Tạo Container |
+| **Builder list items** (`FieldCard`, `StepItem`…) | ✅ Tạo Container — `memo` đặt ở Container, parent chỉ pass IDs (rule 07 §4) |
 | Server Component async fetch | ✅ Server Component = Container tự nhiên |
 | Component chỉ nhận props và render | ❌ Không cần Container, đây là Presenter |
 | Component có `useState` UI đơn giản | ❌ Không cần Container (toggle, hover không tính) |
