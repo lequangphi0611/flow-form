@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto'
 import { Injectable, Logger } from '@nestjs/common'
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library'
 import { PrismaService } from '../../prisma/prisma.service'
+import { throwMappedPrismaError } from '../../common/prisma/prisma-error'
 import { formBodySchema, formSettingsSchema, themeConfigSchema } from '@flowform/validators'
 import type { UpdateFormDto } from '@flowform/validators'
 import { DEFAULT_THEME, DEFAULT_SETTINGS } from '@flowform/types'
@@ -100,27 +101,36 @@ export class FormsRepository {
   }
 
   async update(id: string, dto: UpdateFormDto): Promise<FormSchema> {
-    const row = await this.prisma.form.update({
-      where: { id },
-      data: {
-        ...(dto.title       !== undefined && { title: dto.title }),
-        ...(dto.description !== undefined && { description: dto.description }),
-        ...(dto.schema      !== undefined && { schema: dto.schema as object }),
-        ...(dto.settings    !== undefined && { settings: dto.settings as object }),
-        ...(dto.theme       !== undefined && { theme: dto.theme as object }),
-      },
-      include: { _count: { select: { responses: true } } },
-    })
-    return this.hydrate(row as unknown as RawForm)
+    try {
+      const row = await this.prisma.form.update({
+        where: { id },
+        data: {
+          ...(dto.title       !== undefined && { title: dto.title }),
+          ...(dto.description !== undefined && { description: dto.description }),
+          ...(dto.schema      !== undefined && { schema: dto.schema as object }),
+          ...(dto.settings    !== undefined && { settings: dto.settings as object }),
+          ...(dto.theme       !== undefined && { theme: dto.theme as object }),
+        },
+        include: { _count: { select: { responses: true } } },
+      })
+      return this.hydrate(row as unknown as RawForm)
+    } catch (err) {
+      // Race: form deleted between guard check and update → P2025
+      throwMappedPrismaError(err, { notFoundDetail: `Form '${id}' does not exist.` })
+    }
   }
 
   async publish(id: string): Promise<FormSchema> {
-    const row = await this.prisma.form.update({
-      where: { id },
-      data: { status: 'published' },
-      include: { _count: { select: { responses: true } } },
-    })
-    return this.hydrate(row as unknown as RawForm)
+    try {
+      const row = await this.prisma.form.update({
+        where: { id },
+        data: { status: 'published' },
+        include: { _count: { select: { responses: true } } },
+      })
+      return this.hydrate(row as unknown as RawForm)
+    } catch (err) {
+      throwMappedPrismaError(err, { notFoundDetail: `Form '${id}' does not exist.` })
+    }
   }
 
   async delete(id: string): Promise<void> {

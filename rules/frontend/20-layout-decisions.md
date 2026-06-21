@@ -135,3 +135,19 @@ export default function BuilderLayout({ children }: { children: React.ReactNode 
 // Các cột (left aside w-64, main flex-1, right aside w-72) nằm trong page.tsx hoặc component
 // layout.tsx chỉ tạo full-screen container
 ```
+
+---
+
+## 3. Điều hướng & route prefetch
+
+- **Điều hướng giữa các trang dùng `<Link>`, KHÔNG dùng `router.push`** (trừ khi điều hướng
+  bắt buộc xảy ra sau side-effect, vd sau `signIn`/mutation). `<Link>` được Next **tự
+  prefetch** route (RSC payload + JS) khi vào viewport → bấm vào điều hướng tức thì;
+  `router.push` thì không prefetch.
+  - Trong menu/dropdown shadcn: `<DropdownMenuItem asChild><Link href=...>...</Link></DropdownMenuItem>`.
+- **Route dynamic có server fetch (`no-store`) → tạo `loading.tsx`.** Vừa hiện skeleton ngay
+  trong lúc fetch, vừa là **boundary cho prefetch** (prefetch mặc định chỉ tới `loading.tsx`,
+  không chạy trước data fetch → không tốn API thừa).
+- `prefetch={false}` cho link tới trang hiếm bấm / fetch nặng; **tránh** `prefetch={true}`
+  hàng loạt trên route dynamic (ép chạy data fetch sớm cho mọi link trong viewport).
+- Route prefetch chỉ hoạt động ở **production build**; `next dev` prefetch hạn chế.

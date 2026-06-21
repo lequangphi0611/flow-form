@@ -46,36 +46,39 @@ Ngoài ra: chạy `ls apps/web/src/components/ui/` để lấy danh sách shadcn
 
 ## Step 3 — Quyết định fetch strategy (BẮT BUỘC trước wireframe)
 
-Với mỗi màn hình/section trong story, xác định rõ nguồn data và cách fetch **trước khi** vẽ wireframe. Quyết định sai ở đây dẫn đến refactor lớn sau.
+> Tuân theo `rules/frontend/21-fetch-strategy.md`. **Server-first**: mặc định Server,
+> chỉ rời Server khi có lý do. Quyết định sai ở đây dẫn đến refactor lớn sau.
 
-### Decision tree
+### Decision tree (đi từ Server xuống)
 
 ```
-Data này có yêu cầu nào dưới đây không?
-  ├─ SEO / meta tags cần data (title, description)           → Server
-  ├─ Route là public (f/[formId], landing page, ...)         → Server
-  ├─ Page load lần đầu: data KHÔNG thay đổi trong session    → Server
-  ├─ Data cần invalidate SAU mutation (refetch sau edit)     → Client (TanStack Query)
-  ├─ Data phụ thuộc user interaction (filter, sort, page)    → Client (TanStack Query)
-  └─ Data dùng cả server (initial load) + client (refetch)   → Hybrid
+SEO / generateMetadata / route public?  → SERVER (dừng)
+
+1. Data có cần ngay lúc render lần đầu không?
+   └─ KHÔNG (chỉ sau tương tác: filter/sort/search/pagination/modal)  → CLIENT
+   └─ CÓ → bước 2
+2. Sau khi load, client có cần TỰ cập nhật (invalidate sau mutation cùng trang,
+   refetch nền, optimistic, hoặc Zustand editor) không?
+   └─ KHÔNG  → SERVER   (mặc định, ưu tiên)
+   └─ CÓ     → HYBRID
 ```
 
 ### Mapping sang code
 
 | Strategy | File | Dùng trong |
 |---|---|---|
-| **Server** | `src/lib/data/*.ts` | Server Component, `generateMetadata` |
-| **Client** | `src/lib/api/*.ts` + custom hook | `queryFn`/`mutationFn` trong TanStack Query |
-| **Hybrid** | Cả hai | Server fetch initial data → pass làm `initialData` cho `useQuery` |
+| **Server** (mặc định) | `src/lib/data/*.ts` | Server Component, `generateMetadata` |
+| **Hybrid** | Cả hai | Server fetch initial → `initialData` cho `useQuery`, **hoặc** seed Zustand (editor) |
+| **Client** (cuối cùng) | `src/lib/api/*.ts` + custom hook | `queryFn`/`mutationFn` TanStack Query |
 
 ### Ví dụ thực tế
 
 | Màn hình | Strategy | Lý do |
 |---|---|---|
 | `f/[formId]` — public form | Server | SEO cần title/desc, không cần realtime |
-| `/forms/[id]/builder` — builder | Hybrid | Initial form schema từ server → client auto-save |
-| `/forms` — dashboard | Client | Cần refetch sau khi tạo/xóa form |
-| `/forms/[id]/analytics` — analytics | Client | Data stale, dùng TanStack Query cache |
+| `/forms/[id]/builder` — builder | Hybrid (→ Zustand) | Schema từ server → seed store → client auto-save |
+| `/forms` — dashboard | Hybrid (`initialData`) | Server đưa userId + list → tránh waterfall; client invalidate sau create/delete |
+| `/forms/[id]/analytics` — analytics | Hybrid | Summary/funnel server stream + bảng responses client |
 | `generateMetadata` | Server | Meta tags phải resolve trên server |
 
 ### Output của Step này
@@ -85,11 +88,11 @@ Ghi vào plan (Step 4) dưới dạng bảng:
 ```
 | Data | Strategy | Lý do 1 câu |
 |---|---|---|
-| Form list | Client | Cần invalidate sau create/delete |
+| Form list | Hybrid | Server initial → initialData; client invalidate sau create/delete |
 | Form detail | Hybrid | SEO title + client auto-save |
 ```
 
-Nếu strategy là **Hybrid**: ghi rõ hàm nào ở `lib/data/` và hàm nào ở `lib/api/`.
+Nếu strategy là **Hybrid**: ghi rõ hàm nào ở `lib/data/` (server) và hàm nào ở `lib/api/` (client), và truyền `initialData`/seed store thế nào.
 
 ---
 

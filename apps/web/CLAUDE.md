@@ -17,7 +17,8 @@
 | [`../../rules/frontend/01-conventions.md`](../../rules/frontend/01-conventions.md) | **Tạo file mới bất kỳ** — đặt tên file, tổ chức imports. Nhớ: component file = PascalCase (`RegisterForm.tsx`), hook/util/store = camelCase (`useAutoSave.ts`) |
 | [`../../rules/frontend/02-components.md`](../../rules/frontend/02-components.md) | Viết component: props interface, ref forwarding, composition, displayName — **sau khi** đã quyết định vị trí file (rule 09) và phân tách container/presenter (rule 08) |
 | [`../../rules/frontend/03-state.md`](../../rules/frontend/03-state.md) | Thêm `useState`, `useReducer`, hoặc bất kỳ Zustand action nào vào component |
-| [`../../rules/frontend/04-data-fetching.md`](../../rules/frontend/04-data-fetching.md) | TanStack Query client hooks: useQuery, useMutation, query keys, optimistic update |
+| [`../../rules/frontend/21-fetch-strategy.md`](../../rules/frontend/21-fetch-strategy.md) | **Bất cứ khi nào một màn hình cần data** — quyết định Server / Hybrid / Client TRƯỚC khi code. Server-first. Đọc rule này trước 04/10/11 |
+| [`../../rules/frontend/04-data-fetching.md`](../../rules/frontend/04-data-fetching.md) | TanStack Query client hooks: useQuery, useMutation, query keys, optimistic update — chỉ sau khi rule 21 đã chọn Client/Hybrid |
 | [`../../rules/frontend/05-forms.md`](../../rules/frontend/05-forms.md) | **Tạo bất kỳ form nào** — auth (login/register), dashboard settings, builder settings, wizard renderer — bất kỳ `<form>` element nào |
 | [`../../rules/frontend/06-styling.md`](../../rules/frontend/06-styling.md) | Styling với Tailwind + shadcn/ui |
 | [`../../rules/frontend/07-builder.md`](../../rules/frontend/07-builder.md) | Làm việc trong module Builder (dnd-kit, canvas, store) |
@@ -165,10 +166,22 @@ Mỗi khi tạo component mới, trả lời theo thứ tự:
 - Dùng Immer để mutate nested object an toàn
 - Không dùng `useState` cho form schema trong builder — luôn dùng store
 
-### Data fetching
-- Server Components: fetch trực tiếp (không qua TanStack Query)
-- Client Components: dùng TanStack Query hooks
-- Public form page (`f/[formId]`): fetch ở Server Component, pass xuống client
+### Data fetching — server-first (xem rule 21)
+
+**Luôn quyết định Server / Hybrid / Client trước khi code. Mặc định ưu tiên Server Component.**
+
+- **Server** (mặc định): fetch trong Server Component qua `lib/data/` — không qua TanStack Query. Dùng cho data cần lúc render đầu, không cần client tự cập nhật (vd public form, SEO).
+- **Hybrid**: server fetch lần đầu → đưa sang client. Hai kiểu: (a) `initialData` cho `useQuery` (list/detail có mutation cùng trang — vd dashboard), (b) seed Zustand (editor — vd builder). Client **không** fetch lại đường đọc.
+- **Client** (lựa chọn cuối): `lib/api/` + custom hook TanStack Query — chỉ cho data phụ thuộc tương tác (filter/sort/pagination) hoặc realtime.
+- Không client-fetch dữ liệu đã lấy được ở server lúc render đầu (tránh waterfall + skeleton thừa).
+
+| Route | Strategy |
+|---|---|
+| `(dashboard)/forms` | Hybrid (`initialData`) |
+| `(builder)/forms/[id]/builder` | Hybrid (→ Zustand) |
+| `(analytics)/forms/[id]/analytics` | Hybrid (server stream + client table) |
+| `f/[formId]` | Server (SSR + tags) |
+| `(auth)/login`, `register` | Client |
 
 ### Thêm UI primitive mới
 
