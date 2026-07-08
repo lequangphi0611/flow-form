@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common'
+import { Throttle } from '@nestjs/throttler'
 import { ResponsesService } from './responses.service'
 import { FormAccessGuard } from './guards/form-access.guard'
 import { AuthGuard } from '../../common/guards/auth.guard'
@@ -7,12 +8,16 @@ import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe'
 import { submitResponseSchema, saveDraftResponseSchema } from '@flowform/validators'
 import type { SubmitResponseDto, SaveDraftResponseDto } from '@flowform/validators'
 
+// Endpoint công khai, ẩn danh → siết chặt hơn default global (100/phút) để chống spam
+const SUBMIT_RATE_LIMIT = { default: { limit: 10, ttl: 60_000 } }
+
 @Controller('forms/:formId/responses')
 export class ResponsesController {
   constructor(private readonly responsesService: ResponsesService) {}
 
   // End-user submits a response — form must be published
   @Post()
+  @Throttle(SUBMIT_RATE_LIMIT)
   @UseGuards(FormAccessGuard)
   submit(
     @Param('formId') formId: string,

@@ -1,7 +1,12 @@
+import { Suspense } from 'react'
+
 import { CreateFormButton } from '@/components/forms/CreateFormButton'
-import { FormListContainer } from '@/components/forms/FormList'
+import { FormListSection } from '@/components/forms/FormList'
+import { FormListSkeleton } from '@/components/forms/FormListSkeleton'
 
 export default function FormsPage() {
+  // Shell tĩnh render ngay; phần list fetch trên server và stream trong Suspense,
+  // hiện skeleton thay vì block cả trang (đặc biệt quan trọng với cold start của API).
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
@@ -11,7 +16,9 @@ export default function FormsPage() {
         </div>
         <CreateFormButton />
       </div>
-      <FormListContainer />
+      <Suspense fallback={<FormListSkeleton />}>
+        <FormListSection />
+      </Suspense>
     </div>
   )
 }

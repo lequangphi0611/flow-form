@@ -1,33 +1,34 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { type DragEndEvent } from '@dnd-kit/core'
 
+import type { FormSchema } from '@flowform/types'
 import { useBuilderStore } from '@/store/builder.store'
-import { useFormForEditor } from '@/hooks/forms/useFormForEditor'
 import { useAutoSave } from '../hooks/useAutoSave'
 
 import { BuilderLayout } from './BuilderLayout'
 
 interface BuilderLayoutContainerProps {
-  formId: string
+  // Form đã được fetch ở Server Component (hybrid) và truyền xuống — client không
+  // tự fetch lại để tránh round-trip thừa và double source-of-truth với store.
+  initialForm: FormSchema
 }
 
-export function BuilderLayoutContainer({ formId }: BuilderLayoutContainerProps) {
+export function BuilderLayoutContainer({ initialForm }: BuilderLayoutContainerProps) {
   const setForm = useBuilderStore((s) => s.setForm)
   const reorderSteps = useBuilderStore((s) => s.reorderSteps)
   const reorderFields = useBuilderStore((s) => s.reorderFields)
-  const saveStatus = useAutoSave(formId)
+  const saveStatus = useAutoSave(initialForm.id)
 
-  const { data, isLoading, isError } = useFormForEditor(formId)
-  const hasInitialized = useRef(false)
+  const [isReady, setIsReady] = useState(false)
 
+  // Seed store từ initialForm một lần khi mount (hoặc khi điều hướng sang form khác).
+  // initialForm là object mới mỗi lần navigate nên effect chạy lại đúng lúc cần.
   useEffect(() => {
-    if (data && !hasInitialized.current) {
-      hasInitialized.current = true
-      setForm(data)
-    }
-  }, [data, setForm])
+    setForm(initialForm)
+    setIsReady(true)
+  }, [initialForm, setForm])
 
   function onDragEnd(event: DragEndEvent) {
     const { active, over } = event
@@ -53,15 +54,9 @@ export function BuilderLayoutContainer({ formId }: BuilderLayoutContainerProps) 
     }
   }
 
-  if (isLoading) return <BuilderSkeleton />
-
-  if (isError) {
-    return (
-      <div className="flex-1 flex items-center justify-center">
-        <p className="text-sm text-red-600">Không thể tải form. Thử lại sau.</p>
-      </div>
-    )
-  }
+  // Lỗi tải form (404/403/khác) đã được xử lý ở Server Component (notFound/error.tsx).
+  // Ở client chỉ còn 1 nhịp chờ store được seed — không có network request nào ở đây.
+  if (!isReady) return <BuilderSkeleton />
 
   return <BuilderLayout saveStatus={saveStatus} onDragEnd={onDragEnd} />
 }

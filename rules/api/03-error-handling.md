@@ -105,18 +105,20 @@ export class HttpExceptionFilter implements ExceptionFilter {
 ```
 
 ```ts
-// ✅ — src/main.ts — đăng ký global filter
-import { NestFactory } from '@nestjs/core'
-import { AppModule } from './app.module'
+// ✅ — src/app.module.ts — đăng ký qua APP_FILTER (KHÔNG dùng app.useGlobalFilters(new ...))
+import { APP_FILTER } from '@nestjs/core'
 import { HttpExceptionFilter } from './common/filters/http-exception.filter'
 
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule)
-  app.useGlobalFilters(new HttpExceptionFilter())
-  await app.listen(3001)
-}
-bootstrap()
+@Module({
+  providers: [{ provide: APP_FILTER, useClass: HttpExceptionFilter }],
+})
+export class AppModule {}
 ```
+
+> **Đăng ký global filter/guard/interceptor qua DI token** (`APP_FILTER`, `APP_GUARD`,
+> `APP_INTERCEPTOR`), không dùng `app.useGlobalFilters(new HttpExceptionFilter())`. Dùng
+> token thì filter **inject được dependency** (ConfigService để giấu chi tiết lỗi khi
+> production, Logger…) và **mock/test dễ**. `new ...` trong main.ts không có DI.
 
 ---
 

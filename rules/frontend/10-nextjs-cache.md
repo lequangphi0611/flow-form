@@ -38,9 +38,12 @@ async function getForms(userId: string): Promise<FormSchema[]> {
 ```
 
 ```tsx
-// ✅ — Builder: đang edit, phải lấy data mới nhất
-async function getFormForBuilder(id: string): Promise<FormSchema> {
-  const res = await fetch(`${process.env.API_URL}/api/forms/${id}`, {
+// ✅ — Builder: đang edit, phải lấy data mới nhất.
+// Dùng endpoint /editor (auth + ownership, trả cả draft), KHÔNG phải /:id (public,
+// chỉ trả form đã publish). Forward cookie vì route cần đăng nhập.
+async function getFormForEditor(id: string): Promise<FormSchema> {
+  const res = await fetch(`${process.env.API_URL}/api/forms/${id}/editor`, {
+    headers: { cookie: (await headers()).get('cookie') ?? '' },
     cache: 'no-store',
   })
   return res.json()
@@ -188,12 +191,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 ## Mapping chiến lược cho từng route trong FlowForm
 
-| Route | Chiến lược | Lý do |
-|---|---|---|
-| `app/(dashboard)/forms` | `no-store` | User thêm/xóa form → cần data mới nhất |
-| `app/(builder)/forms/[id]/builder` | `no-store` | Đang edit → phải fresh |
-| `app/(analytics)/forms/[id]/analytics` | `revalidate: 300` | Analytics ok stale 5 phút |
-| `app/f/[formId]` | `revalidate: 3600` + `tags` | Public form ít đổi, invalidate khi publish |
+> Cột "Chiến lược" dưới đây là **cache strategy của phần fetch SERVER**. Việc chọn
+> Server/Hybrid/Client cho cả route xem rule 21. Dashboard và builder là **Hybrid** —
+> phần server của chúng dùng `no-store` như bảng này, phần client xem rule 04/21.
+
+| Route | Strategy (rule 21) | Cache phần server | Lý do |
+|---|---|---|---|
+| `app/(dashboard)/forms` | Hybrid | `no-store` | User thêm/xóa form → fresh; client TanStack Query invalidate sau mutation |
+| `app/(builder)/forms/[id]/builder` | Hybrid (→ Zustand) | `no-store` (`/editor`) | Đang edit → phải fresh; seed store, không client-fetch lại |
+| `app/(analytics)/forms/[id]/analytics` | Hybrid | `revalidate: 300` | Summary/funnel ok stale 5 phút; bảng responses là client |
+| `app/f/[formId]` | Server | `revalidate: 3600` + `tags` | Public form ít đổi, invalidate khi publish |
 
 ---
 

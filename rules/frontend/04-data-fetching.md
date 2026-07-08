@@ -1,6 +1,11 @@
 # 04 — TanStack Query (Client-side)
 
-> Rule này chỉ nói về data fetching phía **client** bằng TanStack Query.
+> **Trước tiên đọc `21-fetch-strategy.md`**: client là lựa chọn **cuối cùng**, không
+> phải mặc định. Server-first — chỉ dùng TanStack Query khi data phụ thuộc tương tác,
+> cần invalidate sau mutation cùng trang, hoặc realtime. Rule này chỉ nói **cách làm**
+> khi đã quyết định là Client (hoặc phần client của Hybrid).
+>
+> - Chọn Server / Hybrid / Client → `21-fetch-strategy.md`
 > - Server-side fetch, caching strategies → `10-nextjs-cache.md`
 > - Tập trung hóa fetch functions (`lib/data/`, `lib/api/`) → `11-data-layer.md`
 > - Error handling (isError, toast, error.tsx) → `13-error-handling.md`

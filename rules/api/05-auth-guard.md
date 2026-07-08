@@ -455,3 +455,32 @@ Trước khi merge bất kỳ PR nào có Guard mới:
 ## Exceptions
 
 Không có exception. Guard luôn phải đi qua Repository.
+
+---
+
+## Rate limiting — ThrottlerGuard PHẢI đăng ký global mới có tác dụng
+
+`ThrottlerModule.forRoot([...])` trong `app.module` **chỉ cấu hình**, không enforce. Phải
+đăng ký `ThrottlerGuard` làm global guard:
+
+```ts
+// app.module.ts
+import { APP_GUARD } from '@nestjs/core'
+import { ThrottlerGuard } from '@nestjs/throttler'
+
+@Module({
+  imports: [ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }])],
+  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
+})
+```
+
+- **Endpoint công khai/ẩn danh** (submit response, draft, public form) → siết chặt hơn
+  default bằng `@Throttle({ default: { limit, ttl } })`. Route nội bộ tần suất cao →
+  `@SkipThrottle()`.
+- **Trust proxy**: deploy sau reverse proxy (Render) → `main.ts` phải
+  `app.getHttpAdapter().getInstance().set('trust proxy', 1)`, nếu không mọi request chung
+  1 IP proxy → rate-limit sai toàn cục.
+- Khớp ràng buộc "no Redis": Throttler mặc định lưu **in-memory**.
+
+- [ ] `ThrottlerGuard` đã đăng ký qua `APP_GUARD` (không chỉ `forRoot`)
+- [ ] Endpoint ẩn danh có `@Throttle` riêng; `trust proxy` đã bật khi sau proxy

@@ -68,6 +68,9 @@ export class PgBossService implements OnModuleInit, OnModuleDestroy {
     await this.boss.stop()
     this.logger.log('pg-boss stopped')
   }
+  // ⚠️ onModuleDestroy CHỈ chạy nếu main.ts gọi app.enableShutdownHooks().
+  // Thiếu nó → SIGTERM (Render restart/deploy) sẽ không stop pg-boss, không $disconnect
+  // Prisma → rò connection. BẮT BUỘC có app.enableShutdownHooks() trước app.listen().
 
   async send<T extends object>(name: string, data: T): Promise<string | null> {
     return this.boss.send(name, data)

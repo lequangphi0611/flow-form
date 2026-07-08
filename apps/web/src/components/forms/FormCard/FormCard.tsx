@@ -33,11 +33,9 @@ const DATE_FORMAT = new Intl.DateTimeFormat('vi-VN', { dateStyle: 'medium' })
 interface FormCardProps {
   form: FormSchema
   onDelete: (id: string) => void
-  onEdit: (id: string) => void
-  onViewResponses: (id: string) => void
 }
 
-export function FormCard({ form, onDelete, onEdit, onViewResponses }: FormCardProps) {
+export function FormCard({ form, onDelete }: FormCardProps) {
   return (
     <Card className="hover:shadow-md transition-shadow duration-150">
       <CardHeader className="pb-2">
@@ -55,13 +53,18 @@ export function FormCard({ form, onDelete, onEdit, onViewResponses }: FormCardPr
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onEdit(form.id)}>
-                <Pencil className="h-4 w-4" />
-                Chỉnh sửa
+              {/* Link → Next tự prefetch route khi menu mở; điều hướng tức thì */}
+              <DropdownMenuItem asChild>
+                <Link href={`/forms/${form.id}/builder`}>
+                  <Pencil className="h-4 w-4" />
+                  Chỉnh sửa
+                </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onViewResponses(form.id)}>
-                <BarChart2 className="h-4 w-4" />
-                Xem responses
+              <DropdownMenuItem asChild>
+                <Link href={`/forms/${form.id}/analytics`}>
+                  <BarChart2 className="h-4 w-4" />
+                  Xem responses
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem destructive onClick={() => onDelete(form.id)}>

@@ -1,41 +1,46 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
+import type { FormSchema } from '@flowform/types'
 import { formKeys } from '@/lib/query-keys'
 import { useFormList } from '@/hooks/forms/useFormList'
 import { useDeleteForm } from '@/hooks/forms/useDeleteForm'
 import { EmptyState } from '@/components/common/EmptyState'
 
 import { FormList } from './FormList'
-import { FormListSkeleton } from '../FormListSkeleton'
 import { DeleteFormDialog } from '../DeleteFormDialog'
 import { CreateFormButton } from '../CreateFormButton'
 
-export function FormListContainer() {
-  const router = useRouter()
+interface FormListContainerProps {
+  userId: string
+  initialForms: FormSchema[]
+}
+
+export function FormListContainer({ userId, initialForms }: FormListContainerProps) {
   const queryClient = useQueryClient()
   const [deletingFormId, setDeletingFormId] = useState<string | null>(null)
 
-  const { data: forms = [], isLoading, isError } = useFormList()
+  // initialData từ server → không có trạng thái loading ở client; skeleton do
+  // <Suspense> ở page lo. Chỉ còn xử lý error (refetch nền lỗi) và empty.
+  const { data: forms = [], isError } = useFormList(userId, initialForms)
 
   const { mutate: deleteForm, isPending: isDeleting } = useDeleteForm({
     onSuccess: () => {
       setDeletingFormId(null)
       toast.success('Đã xóa form thành công')
     },
-    onError: () => {
+    onError: (error) => {
       setDeletingFormId(null)
-      toast.error('Xóa form thất bại. Vui lòng thử lại.')
+      toast.error('Xóa form thất bại', {
+        description: error instanceof Error ? error.message : 'Vui lòng thử lại.',
+      })
     },
   })
 
   const deletingForm = forms.find((f) => f.id === deletingFormId)
-
-  if (isLoading) return <FormListSkeleton />
 
   if (isError) {
     return (
@@ -66,12 +71,7 @@ export function FormListContainer() {
 
   return (
     <>
-      <FormList
-        forms={forms}
-        onDelete={(id) => setDeletingFormId(id)}
-        onEdit={(id) => router.push(`/forms/${id}/builder`)}
-        onViewResponses={(id) => router.push(`/forms/${id}/analytics`)}
-      />
+      <FormList forms={forms} onDelete={(id) => setDeletingFormId(id)} />
       {deletingForm && (
         <DeleteFormDialog
           formTitle={deletingForm.title}
